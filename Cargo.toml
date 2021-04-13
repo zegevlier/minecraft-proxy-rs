@@ -9,3 +9,6 @@ version = "0.1.0"
 [dependencies]
 deadqueue = {version = "0.2.0", features = ["unlimited"]}
 tokio = {version = "1.5.0", features = ["net", "rt-multi-thread", "macros", "io-util"]}
+aes = "0.6.0"
+cfb8 = "0.6.0"
+miniz_oxide = "0.4.4"

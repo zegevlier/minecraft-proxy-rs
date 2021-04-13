@@ -1,32 +1,80 @@
+use miniz_oxide::inflate::decompress_to_vec;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 type DataQueue = deadqueue::unlimited::Queue<u8>;
 
-// Client queue is messages clientbound
-async fn client_parser(clientbound_queue: Arc<DataQueue>, state: Arc<Mutex<u8>>) {
-    loop {
-        let byte = clientbound_queue.pop().await;
-        println!("S->C: {:x}", byte);
-    }
-    
+mod cipher;
+mod packet;
+
+struct State {
+    compress: u32,
+    state: u8,
 }
 
-// Server queue is mesages serverbound
-async fn server_parser(serverbound_queue: Arc<DataQueue>, state: Arc<Mutex<u8>>) {
+impl State {
+    fn new() -> State {
+        State {
+            compress: 0,
+            state: 0,
+        }
+    }
+}
+
+enum Direction {
+    Serverbound,
+    Clientbound,
+}
+
+// Client queue is messages clientbound
+async fn packet_parser(
+    clientbound_queue: Arc<DataQueue>,
+    direction: Direction,
+    state: Arc<Mutex<State>>,
+) -> Result<(), ()> {
+    let mut data = packet::Packet::new();
+    let mut cipher = cipher::Cipher::new();
     loop {
-        let byte = serverbound_queue.pop().await;
-        println!("C->S: {:x}", byte);
+        let new_byte = clientbound_queue.pop().await;
+        let new_byte = cipher.decrypt(new_byte);
+        data.push(new_byte);
+        while data.len() > 0 {
+            let o_data: Vec<u8> = data.get();
+            let packet_length = match data.decode_varint() {
+                Ok(packet_length) => packet_length,
+                Err(()) => {
+                    data.set(o_data);
+                    break;
+                }
+            };
+            if (data.len() as i32) <= packet_length {
+                data.set(o_data);
+                break;
+            }
+            let mut packet = packet::Packet::from(data.read(packet_length as usize).unwrap());
+            if state.lock().unwrap().compress > 0 {
+                let data_length = packet.decode_varint()?;
+                if data_length > 0 {
+                    let decompressed_packet = decompress_to_vec(&packet.get()).unwrap();
+                    packet.set(decompressed_packet);
+                } else {
+                    ()
+                }
+            }
+            let packet_id = packet.decode_varint()?;
+            println!("{}", packet_id);
+            println!("{:x?}", packet);
+        }
     }
 }
 
 async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
     let serverbound_queue = Arc::new(DataQueue::new());
     let clientbound_queue = Arc::new(DataQueue::new());
-    let state: Arc<Mutex<u8>> = Arc::new(Mutex::new(0));
+    let state: Arc<Mutex<State>> = Arc::new(Mutex::new(State::new()));
 
-    let server_stream = TcpStream::connect("127.0.0.1:4444").await?;
+    let server_stream = TcpStream::connect("127.0.0.1:25565").await?;
     let (mut srx, mut stx) = server_stream.into_split();
     let (mut crx, mut ctx) = client_stream.into_split();
 
@@ -83,13 +131,17 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
     let c_state = state.clone();
     tokio::spawn(async move {
         let client_queue = clientbound_queue.clone();
-        client_parser(client_queue, c_state).await;
+        packet_parser(client_queue, Direction::Clientbound, c_state)
+            .await
+            .unwrap();
     });
 
     let s_state = state.clone();
     tokio::spawn(async move {
         let server_queue = serverbound_queue.clone();
-        server_parser(server_queue, s_state).await;
+        packet_parser(server_queue, Direction::Serverbound, s_state)
+            .await
+            .unwrap();
     });
 
     Ok(())
