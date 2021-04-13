@@ -1,37 +1,26 @@
+use maplit::hashmap;
 use miniz_oxide::inflate::decompress_to_vec;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 type DataQueue = deadqueue::unlimited::Queue<u8>;
+type FunctionsType = HashMap<Direction, HashMap<State, HashMap<i32, Box<dyn Parsable>>>>;
 
 mod cipher;
-mod packet;
+mod clientbound;
+pub mod packet;
+mod serverbound;
+mod types;
 
-struct State {
-    compress: u32,
-    state: u8,
-}
+pub use packet::{Packet, Parsable};
+pub use types::{Direction, State, Status};
 
-impl State {
-    fn new() -> State {
-        State {
-            compress: 0,
-            state: 0,
-        }
-    }
-}
-
-enum Direction {
-    Serverbound,
-    Clientbound,
-}
-
-// Client queue is messages clientbound
 async fn packet_parser(
     clientbound_queue: Arc<DataQueue>,
     direction: Direction,
-    state: Arc<Mutex<State>>,
+    status: Arc<Mutex<Status>>,
 ) -> Result<(), ()> {
     let mut data = packet::Packet::new();
     let mut cipher = cipher::Cipher::new();
@@ -53,7 +42,7 @@ async fn packet_parser(
                 break;
             }
             let mut packet = packet::Packet::from(data.read(packet_length as usize).unwrap());
-            if state.lock().unwrap().compress > 0 {
+            if status.lock().unwrap().compress > 0 {
                 let data_length = packet.decode_varint()?;
                 if data_length > 0 {
                     let decompressed_packet = decompress_to_vec(&packet.get()).unwrap();
@@ -63,16 +52,16 @@ async fn packet_parser(
                 }
             }
             let packet_id = packet.decode_varint()?;
-            println!("{}", packet_id);
-            println!("{:x?}", packet);
+            
+            println!("{:?} {}", direction, packet_id);
         }
     }
 }
 
-async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
+async fn handle_connection(client_stream: TcpStream, functions: ) -> std::io::Result<()> {
     let serverbound_queue = Arc::new(DataQueue::new());
     let clientbound_queue = Arc::new(DataQueue::new());
-    let state: Arc<Mutex<State>> = Arc::new(Mutex::new(State::new()));
+    let state: Arc<Mutex<Status>> = Arc::new(Mutex::new(Status::new()));
 
     let server_stream = TcpStream::connect("127.0.0.1:25565").await?;
     let (mut srx, mut stx) = server_stream.into_split();
@@ -151,8 +140,29 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
 async fn main() -> std::io::Result<()> {
     let mc_client_listener = TcpListener::bind("127.0.0.1:3333").await?;
 
+    let mut functions: FunctionsType = hashmap! {
+        Direction::Serverbound => hashmap! {
+            State::Handshaking => hashmap! {},
+            State::Status => hashmap! {},
+            State::Login => hashmap! {},
+            State::Play => hashmap! {},
+        },
+        Direction::Clientbound => hashmap! {
+            State::Handshaking => hashmap! {},
+            State::Status => hashmap! {},
+            State::Login => hashmap! {},
+            State::Play => hashmap! {},
+        },
+    };
+    functions
+        .get_mut(&Direction::Serverbound)
+        .unwrap()
+        .get_mut(&State::Handshaking)
+        .unwrap()
+        .insert(0x00, Box::new(serverbound::handshaking::Handshake::empty()));
+
     loop {
         let (socket, _) = mc_client_listener.accept().await?;
-        handle_connection(socket).await?;
+        handle_connection(socket, functions.clone()).await?;
     }
 }

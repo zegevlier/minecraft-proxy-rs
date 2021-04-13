@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 #[derive(Debug)]
 pub struct Packet {
     data: Vec<u8>,
@@ -84,6 +86,15 @@ impl Packet {
         }
         return Ok(result);
     }
+
+    pub fn decode_string(&mut self) -> Result<String, ()> {
+        let string_length = self.decode_varint()?;
+        return Ok(String::from_utf8(self.read(string_length.try_into().unwrap())?).unwrap());
+    }
+
+    pub fn decode_ushort(&mut self) -> Result<u16, ()> {
+        Ok(u16::from_be_bytes(self.read(2)?.try_into().unwrap()))
+    }
 }
 
 #[cfg(test)]
@@ -147,4 +158,14 @@ mod tests {
             packet.clear()
         }
     }
+}
+
+pub trait Parsable {
+    fn empty() -> Self where Self: Sized;
+
+    fn parse_packet(packet: Packet) -> Result<Self, ()>
+    where
+        Self: Sized;
+
+    fn to_str(&self) -> String;
 }

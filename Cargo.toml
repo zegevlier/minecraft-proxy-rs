@@ -12,3 +12,4 @@ tokio = {version = "1.5.0", features = ["net", "rt-multi-thread", "macros", "io-
 aes = "0.6.0"
 cfb8 = "0.6.0"
 miniz_oxide = "0.4.4"
+maplit = "1.0.2"
