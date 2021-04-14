@@ -43,5 +43,13 @@ pub fn get_functions() -> Functions {
         0x00,
         Box::new(crate::serverbound::handshaking::Handshake::empty()),
     );
+
+    add_to_functions(
+        &mut functions,
+        Direction::Serverbound,
+        State::Login,
+        0x00,
+        Box::new(crate::serverbound::login::LoginStart::empty()),
+    );
     functions
 }

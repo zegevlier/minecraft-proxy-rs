@@ -171,7 +171,7 @@ pub trait Parsable: DynClone {
 
     fn to_str(&self) -> String;
 
-    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
+    fn update_state(&self, _state: &mut Status) -> Result<(), ()> {
         Ok(())
     }
 
