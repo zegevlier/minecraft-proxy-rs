@@ -1,18 +1,17 @@
-use maplit::hashmap;
 use miniz_oxide::inflate::decompress_to_vec;
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 type DataQueue = deadqueue::unlimited::Queue<u8>;
-type FunctionsType = HashMap<Direction, HashMap<State, HashMap<i32, Box<dyn Parsable>>>>;
 
 mod cipher;
-mod clientbound;
+mod functions;
 pub mod packet;
-mod serverbound;
 mod types;
+
+pub mod clientbound;
+pub mod serverbound;
 
 pub use packet::{Packet, Parsable};
 pub use types::{Direction, State, Status};
@@ -24,6 +23,7 @@ async fn packet_parser(
 ) -> Result<(), ()> {
     let mut data = packet::Packet::new();
     let mut cipher = cipher::Cipher::new();
+    let functions = functions::get_functions();
     loop {
         let new_byte = clientbound_queue.pop().await;
         let new_byte = cipher.decrypt(new_byte);
@@ -52,13 +52,26 @@ async fn packet_parser(
                 }
             }
             let packet_id = packet.decode_varint()?;
-            
             println!("{:?} {}", direction, packet_id);
+            let mut parsed_packet = match functions
+                .get(&direction)
+                .unwrap()
+                .get(&status.lock().unwrap().state)
+                .unwrap()
+                .get(&packet_id)
+            {
+                Some(func) => func.clone(),
+                None => continue,
+            };
+            match parsed_packet.parse_packet(packet) {
+                Ok(_) => println!("{}", parsed_packet.to_str()),
+                Err(_) => println!("Could not parse packet!"),
+            };
         }
     }
 }
 
-async fn handle_connection(client_stream: TcpStream, functions: ) -> std::io::Result<()> {
+async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
     let serverbound_queue = Arc::new(DataQueue::new());
     let clientbound_queue = Arc::new(DataQueue::new());
     let state: Arc<Mutex<Status>> = Arc::new(Mutex::new(Status::new()));
@@ -140,29 +153,8 @@ async fn handle_connection(client_stream: TcpStream, functions: ) -> std::io::Re
 async fn main() -> std::io::Result<()> {
     let mc_client_listener = TcpListener::bind("127.0.0.1:3333").await?;
 
-    let mut functions: FunctionsType = hashmap! {
-        Direction::Serverbound => hashmap! {
-            State::Handshaking => hashmap! {},
-            State::Status => hashmap! {},
-            State::Login => hashmap! {},
-            State::Play => hashmap! {},
-        },
-        Direction::Clientbound => hashmap! {
-            State::Handshaking => hashmap! {},
-            State::Status => hashmap! {},
-            State::Login => hashmap! {},
-            State::Play => hashmap! {},
-        },
-    };
-    functions
-        .get_mut(&Direction::Serverbound)
-        .unwrap()
-        .get_mut(&State::Handshaking)
-        .unwrap()
-        .insert(0x00, Box::new(serverbound::handshaking::Handshake::empty()));
-
     loop {
         let (socket, _) = mc_client_listener.accept().await?;
-        handle_connection(socket, functions.clone()).await?;
+        handle_connection(socket).await?;
     }
 }

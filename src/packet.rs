@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use dyn_clone::DynClone;
 
 #[derive(Debug)]
 pub struct Packet {
@@ -160,12 +161,11 @@ mod tests {
     }
 }
 
-pub trait Parsable {
+pub trait Parsable: DynClone {
     fn empty() -> Self where Self: Sized;
 
-    fn parse_packet(packet: Packet) -> Result<Self, ()>
-    where
-        Self: Sized;
+    fn parse_packet(&mut self, packet: Packet) -> Result<(), ()>;
 
     fn to_str(&self) -> String;
 }
+dyn_clone::clone_trait_object!(Parsable);

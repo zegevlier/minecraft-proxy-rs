@@ -1,6 +1,7 @@
 use crate::packet::{Packet, Parsable};
 use crate::State;
 
+#[derive(Clone)]
 pub struct Handshake {
     protocol_version: i32,
     server_address: String,
@@ -18,21 +19,16 @@ impl Parsable for Handshake {
         }
     }
 
-    fn parse_packet(mut packet: Packet) -> Result<Handshake, ()> {
-        let protocol_version = packet.decode_varint()?;
-        let server_address = packet.decode_string()?;
-        let server_port = packet.decode_ushort()?;
-        let next_state = match packet.decode_varint()? {
+    fn parse_packet(&mut self, mut packet: Packet) -> Result<(), ()> {
+        self.protocol_version = packet.decode_varint()?;
+        self.server_address = packet.decode_string()?;
+        self.server_port = packet.decode_ushort()?;
+        self.next_state = match packet.decode_varint()? {
             1 => State::Status,
             2 => State::Login,
             _ => return Err(()),
         };
-        return Ok(Handshake {
-            protocol_version: protocol_version,
-            server_address: server_address,
-            server_port: server_port,
-            next_state: next_state,
-        });
+        return Ok(());
     }
 
     fn to_str(&self) -> String {
