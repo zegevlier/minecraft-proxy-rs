@@ -22,11 +22,14 @@ async fn packet_parser(
     status: Arc<Mutex<Status>>,
 ) -> Result<(), ()> {
     let mut data = packet::Packet::new();
-    let mut cipher = cipher::Cipher::new();
     let functions = functions::get_functions();
     loop {
         let new_byte = clientbound_queue.pop().await;
-        let new_byte = cipher.decrypt(new_byte);
+        let new_byte = match direction {
+            Direction::Serverbound => status.lock().unwrap().server_cipher.decrypt(new_byte),
+            Direction::Clientbound => status.lock().unwrap().client_cipher.decrypt(new_byte)
+        };
+        
         data.push(new_byte);
         while data.len() > 0 {
             let o_data: Vec<u8> = data.get();
