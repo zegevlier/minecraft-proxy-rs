@@ -1,5 +1,6 @@
-use std::convert::TryInto;
 use dyn_clone::DynClone;
+use std::convert::TryInto;
+use crate::types::Status;
 
 #[derive(Debug)]
 pub struct Packet {
@@ -162,10 +163,21 @@ mod tests {
 }
 
 pub trait Parsable: DynClone {
-    fn empty() -> Self where Self: Sized;
+    fn empty() -> Self
+    where
+        Self: Sized;
 
     fn parse_packet(&mut self, packet: Packet) -> Result<(), ()>;
 
     fn to_str(&self) -> String;
+
+    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
+        Ok(())
+    }
+
+    fn state_updating(&self) -> bool {
+        false
+    }
 }
+
 dyn_clone::clone_trait_object!(Parsable);

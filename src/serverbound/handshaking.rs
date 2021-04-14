@@ -1,5 +1,5 @@
 use crate::packet::{Packet, Parsable};
-use crate::State;
+use crate::{State, Status};
 
 #[derive(Clone)]
 pub struct Handshake {
@@ -36,5 +36,15 @@ impl Parsable for Handshake {
             "[HANDSHAKE] {} {}:{} {:?}",
             self.protocol_version, self.server_address, self.server_port, self.next_state
         )
+    }
+
+    fn state_updating(&self) -> bool {
+        true
+    }
+
+    fn update_state(&self, status: &mut Status) -> Result<(), ()> {
+        status.state = self.next_state.clone();
+        println!("Updated state to {:?}", self.next_state);
+        Ok(())
     }
 }

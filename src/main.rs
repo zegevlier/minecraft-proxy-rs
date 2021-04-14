@@ -65,8 +65,14 @@ async fn packet_parser(
             };
             match parsed_packet.parse_packet(packet) {
                 Ok(_) => println!("{}", parsed_packet.to_str()),
-                Err(_) => println!("Could not parse packet!"),
+                Err(_) => {
+                    println!("Could not parse packet!");
+                    continue;
+                }
             };
+            if parsed_packet.state_updating() {
+                parsed_packet.update_state(&mut status.lock().unwrap()).unwrap()
+            }
         }
     }
 }
