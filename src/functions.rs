@@ -68,5 +68,13 @@ pub fn get_functions() -> Functions {
         Box::new(crate::serverbound::login::EncResponse::empty()),
     );
 
+    add_to_functions(
+        &mut functions,
+        Direction::Clientbound,
+        State::Login,
+        0x03,
+        Box::new(crate::clientbound::login::SetCompression::empty()),
+    );
+
     functions
 }

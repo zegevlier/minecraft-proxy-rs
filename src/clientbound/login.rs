@@ -1,4 +1,5 @@
 use crate::packet::{Packet, Parsable};
+use crate::types::Status;
 
 #[derive(Clone)]
 pub struct EncRequest {
@@ -38,5 +39,40 @@ impl Parsable for EncRequest {
             self.verify_token_length,
             self.verify_token
         )
+    }
+}
+
+
+#[derive(Clone)]
+pub struct SetCompression {
+    threshold: i32,
+}
+
+impl Parsable for SetCompression {
+    fn empty() -> Self {
+        Self {
+            threshold: 0
+        }
+    }
+
+    fn parse_packet(&mut self, mut packet: Packet) -> Result<(), ()> {
+        self.threshold = packet.decode_varint()?;
+        return Ok(());
+    }
+
+    fn to_str(&self) -> String {
+        format!(
+            "[SET_COMPRESSION] {}",
+            self.threshold,
+        )
+    }
+
+    fn state_updating(&self) -> bool {
+        true
+    }
+
+    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
+        state.compress = self.threshold as u32;
+        Ok(())
     }
 }
