@@ -1,6 +1,6 @@
+use crate::types::Status;
 use dyn_clone::DynClone;
 use std::convert::TryInto;
-use crate::types::Status;
 
 #[derive(Debug)]
 pub struct Packet {
@@ -96,6 +96,10 @@ impl Packet {
 
     pub fn decode_ushort(&mut self) -> Result<u16, ()> {
         Ok(u16::from_be_bytes(self.read(2)?.try_into().unwrap()))
+    }
+
+    pub fn decode_long(&mut self) -> Result<i64, ()> {
+        Ok(i64::from_be_bytes(self.read(8)?.try_into().unwrap()))
     }
 }
 

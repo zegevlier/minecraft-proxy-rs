@@ -44,7 +44,6 @@ impl Parsable for Handshake {
 
     fn update_state(&self, status: &mut Status) -> Result<(), ()> {
         status.state = self.next_state.clone();
-        println!("Updated state to {:?}", self.next_state);
         Ok(())
     }
 }

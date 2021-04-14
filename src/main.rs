@@ -1,4 +1,4 @@
-use miniz_oxide::inflate::decompress_to_vec;
+use miniz_oxide::inflate::decompress_to_vec_zlib;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -27,9 +27,9 @@ async fn packet_parser(
         let new_byte = clientbound_queue.pop().await;
         let new_byte = match direction {
             Direction::Serverbound => status.lock().unwrap().server_cipher.decrypt(new_byte),
-            Direction::Clientbound => status.lock().unwrap().client_cipher.decrypt(new_byte)
+            Direction::Clientbound => status.lock().unwrap().client_cipher.decrypt(new_byte),
         };
-        
+
         data.push(new_byte);
         while data.len() > 0 {
             let o_data: Vec<u8> = data.get();
@@ -48,14 +48,20 @@ async fn packet_parser(
             if status.lock().unwrap().compress > 0 {
                 let data_length = packet.decode_varint()?;
                 if data_length > 0 {
-                    let decompressed_packet = decompress_to_vec(&packet.get()).unwrap();
+                    let decompressed_packet = match decompress_to_vec_zlib(&packet.get()) {
+                        Ok(decompressed_packet) => decompressed_packet,
+                        Err(why) => {
+                            println!("Decompress error: {:?}", why);
+                            break;
+                        }
+                    };
                     packet.set(decompressed_packet);
                 } else {
                     ()
                 }
             }
             let packet_id = packet.decode_varint()?;
-            println!("{:?} {}", direction, packet_id);
+            // println!("{:?} {:X}", direction, packet_id);
             let mut parsed_packet = match functions
                 .get(&direction)
                 .unwrap()
@@ -74,7 +80,9 @@ async fn packet_parser(
                 }
             };
             if parsed_packet.state_updating() {
-                parsed_packet.update_state(&mut status.lock().unwrap()).unwrap()
+                parsed_packet
+                    .update_state(&mut status.lock().unwrap())
+                    .unwrap()
             }
         }
     }
@@ -85,7 +93,7 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
     let clientbound_queue = Arc::new(DataQueue::new());
     let state: Arc<Mutex<Status>> = Arc::new(Mutex::new(Status::new()));
 
-    let server_stream = TcpStream::connect("play.schoolrp.net:25565").await?;
+    let server_stream = TcpStream::connect("127.0.0.1:25565").await?;
     let (mut srx, mut stx) = server_stream.into_split();
     let (mut crx, mut ctx) = client_stream.into_split();
 

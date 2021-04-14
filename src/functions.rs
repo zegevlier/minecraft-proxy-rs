@@ -84,5 +84,37 @@ pub fn get_functions() -> Functions {
         Box::new(crate::clientbound::login::LoginSuccess::empty()),
     );
 
+    add_to_functions(
+        &mut functions,
+        Direction::Clientbound,
+        State::Status,
+        0x00,
+        Box::new(crate::clientbound::status::StatusResponse::empty()),
+    );
+
+    add_to_functions(
+        &mut functions,
+        Direction::Clientbound,
+        State::Status,
+        0x01,
+        Box::new(crate::clientbound::status::StatusPong::empty()),
+    );
+
+    add_to_functions(
+        &mut functions,
+        Direction::Serverbound,
+        State::Status,
+        0x00,
+        Box::new(crate::serverbound::status::StatusRequest::empty()),
+    );
+
+    add_to_functions(
+        &mut functions,
+        Direction::Serverbound,
+        State::Status,
+        0x01,
+        Box::new(crate::serverbound::status::StatusPing::empty()),
+    );
+
     functions
 }

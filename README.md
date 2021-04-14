@@ -1,8 +1,6 @@
 # minecraft-proxy-rs
 
 ## Packets still required to be implemented
- - Status *
-
  - Login CB disconnect
  - Login CB plugin request
  - Login SB plugin response

@@ -68,15 +68,20 @@ impl Parsable for EncResponse {
     }
 
     fn update_state(&self, state: &mut Status) -> Result<(), ()> {
-        let appdata = std::env::var("APPDATA").unwrap();
         let path_str = if cfg!(windows) {
+            let appdata = std::env::var("APPDATA").unwrap();
             Path::new(&appdata)
                 .join(".minecraft/logs/latest.log")
                 .to_str()
                 .unwrap()
                 .to_string()
         } else {
-            "~/.minecraft/logs/latest.log".to_string()
+            let home = std::env::var("HOME").unwrap();
+            Path::new(&home)
+                .join(".minecraft/logs/latest.log")
+                .to_str()
+                .unwrap()
+                .to_string()
         };
         let path = Path::new(&path_str);
         // println!("{:?}", &path.to_str());
