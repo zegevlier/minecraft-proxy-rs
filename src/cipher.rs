@@ -25,7 +25,7 @@ impl Cipher {
     }
 
     pub fn enable(&mut self, key: &[u8]) {
-        let cipher = AesCfb8::new_var(key, &[0]).unwrap();
+        let cipher = AesCfb8::new_var(key, key).unwrap();
         self.encryptor = Some(cipher);
     }
 

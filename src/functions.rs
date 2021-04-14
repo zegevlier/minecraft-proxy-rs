@@ -57,7 +57,15 @@ pub fn get_functions() -> Functions {
         Direction::Clientbound,
         State::Login,
         0x01,
-        Box::new(crate::serverbound::login::LoginStart::empty()),
+        Box::new(crate::clientbound::login::EncRequest::empty()),
+    );
+
+    add_to_functions(
+        &mut functions,
+        Direction::Serverbound,
+        State::Login,
+        0x01,
+        Box::new(crate::serverbound::login::EncResponse::empty()),
     );
 
     functions
