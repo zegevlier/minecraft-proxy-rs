@@ -1,5 +1,6 @@
 use crate::packet::{Packet, Parsable};
-use crate::types::Status;
+use crate::types::{Status, State};
+use std::convert::TryInto;
 
 #[derive(Clone)]
 pub struct EncRequest {
@@ -42,7 +43,6 @@ impl Parsable for EncRequest {
     }
 }
 
-
 #[derive(Clone)]
 pub struct SetCompression {
     threshold: i32,
@@ -50,9 +50,7 @@ pub struct SetCompression {
 
 impl Parsable for SetCompression {
     fn empty() -> Self {
-        Self {
-            threshold: 0
-        }
+        Self { threshold: 0 }
     }
 
     fn parse_packet(&mut self, mut packet: Packet) -> Result<(), ()> {
@@ -61,10 +59,7 @@ impl Parsable for SetCompression {
     }
 
     fn to_str(&self) -> String {
-        format!(
-            "[SET_COMPRESSION] {}",
-            self.threshold,
-        )
+        format!("[SET_COMPRESSION] {}", self.threshold,)
     }
 
     fn state_updating(&self) -> bool {
@@ -73,6 +68,40 @@ impl Parsable for SetCompression {
 
     fn update_state(&self, state: &mut Status) -> Result<(), ()> {
         state.compress = self.threshold as u32;
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub struct LoginSuccess {
+    uuid: u128,
+    username: String,
+}
+
+impl Parsable for LoginSuccess {
+    fn empty() -> Self {
+        Self {
+            uuid: 0,
+            username: "".into(),
+        }
+    }
+
+    fn parse_packet(&mut self, mut packet: Packet) -> Result<(), ()> {
+        self.uuid = u128::from_be_bytes(packet.read(16)?.try_into().unwrap());
+        self.username = packet.decode_string()?;
+        return Ok(());
+    }
+
+    fn to_str(&self) -> String {
+        format!("[LOGIN_SUCCESS] {} {}", self.uuid, self.username,)
+    }
+
+    fn state_updating(&self) -> bool {
+        true
+    }
+
+    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
+        state.state = State::Play;
         Ok(())
     }
 }
