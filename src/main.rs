@@ -93,7 +93,10 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
     let clientbound_queue = Arc::new(DataQueue::new());
     let state: Arc<Mutex<Status>> = Arc::new(Mutex::new(Status::new()));
 
-    let server_stream = TcpStream::connect("127.0.0.1:25565").await?;
+    let server_stream = TcpStream::connect(
+        // "127.0.0.1:25565"
+        "play.schoolrp.net:25565"
+    ).await?;
     let (mut srx, mut stx) = server_stream.into_split();
     let (mut crx, mut ctx) = client_stream.into_split();
 

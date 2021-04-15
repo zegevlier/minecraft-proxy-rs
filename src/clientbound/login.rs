@@ -1,5 +1,6 @@
 use crate::packet::{Packet, Parsable};
-use crate::types::{Status, State};
+use crate::types::{State, Status};
+use hex::encode;
 use std::convert::TryInto;
 
 #[derive(Clone)]
@@ -33,12 +34,12 @@ impl Parsable for EncRequest {
 
     fn to_str(&self) -> String {
         format!(
-            "[ECN_REQUEST] {} {} {:x?} {} {:x?}",
+            "[ECN_REQUEST] {} {} {} {} {}",
             self.server_id,
             self.public_key_length,
-            self.public_key,
+            encode(self.public_key.clone()),
             self.verify_token_length,
-            self.verify_token
+            encode(self.verify_token.clone())
         )
     }
 }

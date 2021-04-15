@@ -1,6 +1,7 @@
 use crate::packet::{Packet, Parsable};
 use crate::types::Status;
 use base64::decode;
+use hex::encode;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
@@ -55,11 +56,11 @@ impl Parsable for EncResponse {
 
     fn to_str(&self) -> String {
         format!(
-            "[ECN_RESPONSE] {} {:x?} {} {:x?}",
+            "[ECN_RESPONSE] {} {} {} {}",
             self.shared_secret_length,
-            self.shared_secret,
+            encode(self.shared_secret.clone()),
             self.verify_token_length,
-            self.verify_token
+            encode(self.verify_token.clone())
         )
     }
 
