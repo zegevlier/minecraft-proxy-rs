@@ -93,7 +93,7 @@ impl Parsable for LoginSuccess {
     }
 
     fn to_str(&self) -> String {
-        format!("[LOGIN_SUCCESS] {} {}", self.uuid, self.username,)
+        format!("[LOGIN_SUCCESS] {:x} {}", self.uuid, self.username,)
     }
 
     fn state_updating(&self) -> bool {
