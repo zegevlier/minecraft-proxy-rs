@@ -1,5 +1,6 @@
 use crate::cipher::Cipher;
 use std::fmt;
+
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum State {
     Handshaking,
@@ -46,6 +47,7 @@ pub enum Direction {
 impl fmt::Display for Direction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            // Client to server or server to client
             Self::Serverbound => write!(f, "C>S"),
             Self::Clientbound => write!(f, "S>C"),
         }

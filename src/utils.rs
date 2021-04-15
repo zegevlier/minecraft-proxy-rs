@@ -1,3 +1,5 @@
+// This converts a long string into one that's shortened.
+// alongstringlikethis would become alongs...kethis
 pub fn make_string_fixed_length(string: String, length: usize) -> String {
     if string.len() <= length {
         return string;

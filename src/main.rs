@@ -60,7 +60,7 @@ async fn packet_parser(
         while data.len() > 0 {
             // It takes a backup of the data before trying to parse anything,
             // because there is a decent chance that the parsing fails and it needs to be restored.
-            let o_data: Vec<u8> = data.get();
+            let o_data: Vec<u8> = data.get_vec();
             // It then starts parsing the packet by seeing the length the next packet will be.
             let packet_length = match data.decode_varint() {
                 Ok(packet_length) => packet_length,
@@ -80,7 +80,7 @@ async fn packet_parser(
             if status.lock().unwrap().compress > 0 {
                 let data_length = packet.decode_varint()?;
                 if data_length > 0 {
-                    let decompressed_packet = match decompress_to_vec_zlib(&packet.get()) {
+                    let decompressed_packet = match decompress_to_vec_zlib(&packet.get_vec()) {
                         Ok(decompressed_packet) => decompressed_packet,
                         Err(why) => {
                             log::error!("Decompress error: {:?}", why);

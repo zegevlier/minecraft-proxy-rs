@@ -2,6 +2,7 @@ use crate::types::Status;
 use dyn_clone::DynClone;
 use std::convert::TryInto;
 
+// Pakcet holds a raw (unparsed) packet.
 #[derive(Debug)]
 pub struct Packet {
     data: Vec<u8>,
@@ -28,7 +29,7 @@ impl Packet {
         self.data.as_slice()
     }
 
-    pub fn get(&self) -> Vec<u8> {
+    pub fn get_vec(&self) -> Vec<u8> {
         self.data.clone()
     }
 
@@ -36,6 +37,7 @@ impl Packet {
         self.data = Vec::new();
     }
 
+    // This should never fail unless a wrong packet was delivered.
     pub fn read(&mut self, amount: usize) -> Result<Vec<u8>, ()> {
         if self.data.len() < amount {
             return Err(());
@@ -49,6 +51,7 @@ impl Packet {
         self.data = value;
     }
 
+    // no touchies
     pub fn decode_varint(&mut self) -> Result<i32, ()> {
         let mut num_read = 0;
         let mut result: i32 = 0;
@@ -69,6 +72,7 @@ impl Packet {
         return Ok(result);
     }
 
+    // no touchies either
     pub fn decode_varlong(&mut self) -> Result<i64, ()> {
         let mut num_read = 0;
         let mut result: i64 = 0;
@@ -94,6 +98,7 @@ impl Packet {
         return Ok(String::from_utf8(self.read(string_length.try_into().unwrap())?).unwrap());
     }
 
+    // The numbers need to be decoded from be bytes, because mc in weird.
     pub fn decode_ushort(&mut self) -> Result<u16, ()> {
         Ok(u16::from_be_bytes(self.read(2)?.try_into().unwrap()))
     }
@@ -103,6 +108,7 @@ impl Packet {
     }
 }
 
+// More tests still need to be added (preferebly for everything that the packet can parse).
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -111,6 +117,7 @@ mod tests {
     fn test_varint() {
         let mut packet = Packet::new();
         let values = vec![
+            // Gotten from wiki.vg
             (vec![0x00], 0),
             (vec![0x01], 1),
             (vec![0x02], 2),

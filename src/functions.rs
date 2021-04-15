@@ -36,6 +36,7 @@ pub fn get_functions() -> Functions {
         },
     };
 
+    // These have to be reorganized
     add_to_functions(
         &mut functions,
         Direction::Serverbound,
