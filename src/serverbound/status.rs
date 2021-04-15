@@ -12,8 +12,8 @@ impl Parsable for StatusRequest {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!("[STATUS_REQUEST]",)
+    fn get_printable(&self) -> (&str, String) {
+        ("STATUS_REQUEST", format!("",))
     }
 }
 
@@ -32,7 +32,7 @@ impl Parsable for StatusPing {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!("[STATUS_PING] {}", self.payload)
+    fn get_printable(&self) -> (&str, String) {
+        ("STATUS_PING", format!("{}", self.payload))
     }
 }

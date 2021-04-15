@@ -31,19 +31,21 @@ impl Parsable for Handshake {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
+    fn get_printable(&self) -> (&str, String) {
+        ("HANDSHAKE", 
         format!(
-            "[HANDSHAKE] {} {}:{} {:?}",
+            "{} {}:{} {:?}",
             self.protocol_version, self.server_address, self.server_port, self.next_state
-        )
+        ))
     }
 
     fn state_updating(&self) -> bool {
         true
     }
 
-    fn update_state(&self, status: &mut Status) -> Result<(), ()> {
+    fn update_status(&self, status: &mut Status) -> Result<(), ()> {
         status.state = self.next_state.clone();
+        debug!("State updated to {}", status.state);
         Ok(())
     }
 }

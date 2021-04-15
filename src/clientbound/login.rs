@@ -2,6 +2,7 @@ use crate::packet::{Packet, Parsable};
 use crate::types::{State, Status};
 use hex::encode;
 use std::convert::TryInto;
+use crate::utils;
 
 #[derive(Clone)]
 pub struct EncRequest {
@@ -32,14 +33,17 @@ impl Parsable for EncRequest {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!(
-            "[ECN_REQUEST] {} {} {} {} {}",
-            self.server_id,
-            self.public_key_length,
-            encode(self.public_key.clone()),
-            self.verify_token_length,
-            encode(self.verify_token.clone())
+    fn get_printable(&self) -> (&str, String) {
+        (
+            "ENC_REQUEST",
+            format!(
+                "{} {} {} {}",
+                // self.server_id,
+                self.public_key_length,
+                utils::make_string_fixed_length(encode(self.public_key.clone()), 20),
+                self.verify_token_length,
+                utils::make_string_fixed_length(encode(self.verify_token.clone()), 20)
+            ),
         )
     }
 }
@@ -59,16 +63,16 @@ impl Parsable for SetCompression {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!("[SET_COMPRESSION] {}", self.threshold,)
+    fn get_printable(&self) -> (&str, String) {
+        ("SET_COMPRESSION", format!("{}", self.threshold,))
     }
 
     fn state_updating(&self) -> bool {
         true
     }
 
-    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
-        state.compress = self.threshold as u32;
+    fn update_status(&self, status: &mut Status) -> Result<(), ()> {
+        status.compress = self.threshold as u32;
         Ok(())
     }
 }
@@ -93,16 +97,20 @@ impl Parsable for LoginSuccess {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!("[LOGIN_SUCCESS] {:x} {}", self.uuid, self.username,)
+    fn get_printable(&self) -> (&str, String) {
+        (
+            "LOGIN_SUCCESS",
+            format!("{:x} {}", self.uuid, self.username,),
+        )
     }
 
     fn state_updating(&self) -> bool {
         true
     }
 
-    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
-        state.state = State::Play;
+    fn update_status(&self, status: &mut Status) -> Result<(), ()> {
+        status.state = State::Play;
+        debug!("State updated to {}", status.state);
         Ok(())
     }
 }
@@ -114,9 +122,7 @@ pub struct Disconnect {
 
 impl Parsable for Disconnect {
     fn empty() -> Self {
-        Self {
-            reason: "".into(),
-        }
+        Self { reason: "".into() }
     }
 
     fn parse_packet(&mut self, mut packet: Packet) -> Result<(), ()> {
@@ -124,16 +130,17 @@ impl Parsable for Disconnect {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!("[LOGIN_DISCONNECT] {}", self.reason)
+    fn get_printable(&self) -> (&str, String) {
+        ("LOGIN_DISCONNECT", format!("{}", self.reason))
     }
 
     fn state_updating(&self) -> bool {
         true
     }
 
-    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
-        state.state = State::Handshaking;
+    fn update_status(&self, status: &mut Status) -> Result<(), ()> {
+        status.state = State::Handshaking;
+        debug!("State updated to {}", status.state);
         Ok(())
     }
 }

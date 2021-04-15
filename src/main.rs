@@ -1,19 +1,27 @@
 use miniz_oxide::inflate::decompress_to_vec_zlib;
+use std::io::Write;
 use std::sync::{Arc, Mutex};
+
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 #[macro_use]
 extern crate log;
+use env_logger::Builder;
+use log::LevelFilter;
 
 type DataQueue = deadqueue::unlimited::Queue<u8>;
 
-const CONNECT_IP: &str = "play.schoolrp.net:25565";
+// const CONNECT_IP: &str = "play.schoolrp.net:25565";
+const CONNECT_IP: &str = "127.0.0.1:25565";
+const BIND_ADDRESS: &str = "127.0.0.1:3333";
 
 mod cipher;
 mod functions;
-pub mod packet;
 mod types;
+
+pub mod packet;
+pub mod utils;
 
 pub mod clientbound;
 pub mod serverbound;
@@ -56,7 +64,7 @@ async fn packet_parser(
                     let decompressed_packet = match decompress_to_vec_zlib(&packet.get()) {
                         Ok(decompressed_packet) => decompressed_packet,
                         Err(why) => {
-                            println!("Decompress error: {:?}", why);
+                            error!("Decompress error: {:?}", why);
                             break;
                         }
                     };
@@ -78,15 +86,18 @@ async fn packet_parser(
                 None => continue,
             };
             match parsed_packet.parse_packet(packet) {
-                Ok(_) => println!("{:?}: {}", direction, parsed_packet.to_str()),
+                Ok(_) => {
+                    let (packet_action, packet_info) = parsed_packet.get_printable();
+                    info!("{} [{:^20}] {}", direction, packet_action, packet_info)
+                }
                 Err(_) => {
-                    println!("Could not parse packet!");
+                    error!("Could not parse packet!");
                     continue;
                 }
             };
             if parsed_packet.state_updating() {
                 parsed_packet
-                    .update_state(&mut status.lock().unwrap())
+                    .update_status(&mut status.lock().unwrap())
                     .unwrap()
             }
         }
@@ -139,7 +150,7 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
                 }
                 Ok(n) => n,
                 Err(e) => {
-                    error!("failed to read from socket; err = {:?}", e);
+                    error!("Failed to read from socket; err = {:?}", e);
                     return;
                 }
             };
@@ -147,7 +158,7 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
                 cb_queue.push(buf[i]);
             }
             if let Err(e) = ctx.write_all(&buf[0..n]).await {
-                error!("failed to write to socket; err = {:?}", e);
+                error!("Failed to write to socket; err = {:?}", e);
                 return;
             }
         }
@@ -174,10 +185,18 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    pretty_env_logger::init();
+    Builder::from_default_env()
+        // .format(|buf, record| writeln!(buf, "{} - {}", record.level(), record.args()))
+        .format(|buf, record| {
+            let formatted_level = buf.default_styled_level(record.level());
+            writeln!(buf, "{:<5} {}", formatted_level, record.args())
+        })
+        .filter_level(LevelFilter::Info)
+        .parse_default_env()
+        .init();
 
     info!("Starting listener...");
-    let mc_client_listener = TcpListener::bind("127.0.0.1:3333").await?;
+    let mc_client_listener = TcpListener::bind(BIND_ADDRESS).await?;
 
     loop {
         let (socket, _) = mc_client_listener.accept().await?;

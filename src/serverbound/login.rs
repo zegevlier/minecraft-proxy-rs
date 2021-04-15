@@ -6,6 +6,8 @@ use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 
+use crate::utils;
+
 #[derive(Clone)]
 pub struct LoginStart {
     username: String,
@@ -23,8 +25,8 @@ impl Parsable for LoginStart {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!("[LOGIN_START] {}", self.username,)
+    fn get_printable(&self) -> (&str, String) {
+        ("LOGIN_START", format!("{}", self.username,))
     }
 }
 
@@ -54,13 +56,16 @@ impl Parsable for EncResponse {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!(
-            "[ECN_RESPONSE] {} {} {} {}",
-            self.shared_secret_length,
-            encode(self.shared_secret.clone()),
-            self.verify_token_length,
-            encode(self.verify_token.clone())
+    fn get_printable(&self) -> (&str, String) {
+        (
+            "ENC_RESPONSE",
+            format!(
+                "{} {} {} {}",
+                self.shared_secret_length,
+                utils::make_string_fixed_length(encode(self.shared_secret.clone()), 20),
+                self.verify_token_length,
+                utils::make_string_fixed_length(encode(self.verify_token.clone()), 20)
+            ),
         )
     }
 
@@ -68,7 +73,7 @@ impl Parsable for EncResponse {
         true
     }
 
-    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
+    fn update_status(&self, state: &mut Status) -> Result<(), ()> {
         let path_str = if cfg!(windows) {
             let appdata = std::env::var("APPDATA").unwrap();
             Path::new(&appdata)
@@ -110,6 +115,8 @@ impl Parsable for EncResponse {
 
         state.client_cipher.enable(&decode(&secret_key).unwrap());
         state.server_cipher.enable(&decode(&secret_key).unwrap());
+
+        debug!("Updated cipher with secret key {}", secret_key);
         Ok(())
     }
 }

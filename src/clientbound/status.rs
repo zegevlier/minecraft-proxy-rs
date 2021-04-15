@@ -18,8 +18,8 @@ impl Parsable for StatusResponse {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!("[STATUS_RESPONSE] {}", self.json_response)
+    fn get_printable(&self) -> (&str, String) {
+        ("STATUS_RESPONSE", format!("{}", self.json_response))
     }
 }
 
@@ -38,16 +38,17 @@ impl Parsable for StatusPong {
         return Ok(());
     }
 
-    fn to_str(&self) -> String {
-        format!("[STATUS_PONG] {}", self.payload)
+    fn get_printable(&self) -> (&str, String) {
+        ("STATUS_PONG", format!("{}", self.payload))
     }
 
     fn state_updating(&self) -> bool {
         true
     }
 
-    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
-        state.state = State::Handshaking;
+    fn update_status(&self, status: &mut Status) -> Result<(), ()> {
+        status.state = State::Handshaking;
+        debug!("State updated to {}", status.state);
         Ok(())
     }
 }

@@ -173,9 +173,9 @@ pub trait Parsable: DynClone {
 
     fn parse_packet(&mut self, packet: Packet) -> Result<(), ()>;
 
-    fn to_str(&self) -> String;
+    fn get_printable(&self) -> (&str, String);
 
-    fn update_state(&self, _state: &mut Status) -> Result<(), ()> {
+    fn update_status(&self, _status: &mut Status) -> Result<(), ()> {
         Ok(())
     }
 
