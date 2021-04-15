@@ -32,11 +32,13 @@ impl Parsable for Handshake {
     }
 
     fn get_printable(&self) -> (&str, String) {
-        ("HANDSHAKE", 
-        format!(
-            "{} {}:{} {:?}",
-            self.protocol_version, self.server_address, self.server_port, self.next_state
-        ))
+        (
+            "HANDSHAKE",
+            format!(
+                "{} {}:{} {:?}",
+                self.protocol_version, self.server_address, self.server_port, self.next_state
+            ),
+        )
     }
 
     fn state_updating(&self) -> bool {
@@ -45,7 +47,7 @@ impl Parsable for Handshake {
 
     fn update_status(&self, status: &mut Status) -> Result<(), ()> {
         status.state = self.next_state.clone();
-        debug!("State updated to {}", status.state);
+        log::debug!("State updated to {}", status.state);
         Ok(())
     }
 }

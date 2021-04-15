@@ -1,8 +1,8 @@
 use crate::packet::{Packet, Parsable};
 use crate::types::{State, Status};
+use crate::utils;
 use hex::encode;
 use std::convert::TryInto;
-use crate::utils;
 
 #[derive(Clone)]
 pub struct EncRequest {
@@ -110,7 +110,7 @@ impl Parsable for LoginSuccess {
 
     fn update_status(&self, status: &mut Status) -> Result<(), ()> {
         status.state = State::Play;
-        debug!("State updated to {}", status.state);
+        log::debug!("State updated to {}", status.state);
         Ok(())
     }
 }
@@ -140,7 +140,7 @@ impl Parsable for Disconnect {
 
     fn update_status(&self, status: &mut Status) -> Result<(), ()> {
         status.state = State::Handshaking;
-        debug!("State updated to {}", status.state);
+        log::debug!("State updated to {}", status.state);
         Ok(())
     }
 }

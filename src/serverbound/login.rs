@@ -116,7 +116,7 @@ impl Parsable for EncResponse {
         state.client_cipher.enable(&decode(&secret_key).unwrap());
         state.server_cipher.enable(&decode(&secret_key).unwrap());
 
-        debug!("Updated cipher with secret key {}", secret_key);
+        log::debug!("Updated cipher with secret key {}", secret_key);
         Ok(())
     }
 }

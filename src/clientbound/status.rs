@@ -48,7 +48,7 @@ impl Parsable for StatusPong {
 
     fn update_status(&self, status: &mut Status) -> Result<(), ()> {
         status.state = State::Handshaking;
-        debug!("State updated to {}", status.state);
+        log::debug!("State updated to {}", status.state);
         Ok(())
     }
 }
