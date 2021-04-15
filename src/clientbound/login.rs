@@ -106,3 +106,34 @@ impl Parsable for LoginSuccess {
         Ok(())
     }
 }
+
+#[derive(Clone)]
+pub struct Disconnect {
+    reason: String,
+}
+
+impl Parsable for Disconnect {
+    fn empty() -> Self {
+        Self {
+            reason: "".into(),
+        }
+    }
+
+    fn parse_packet(&mut self, mut packet: Packet) -> Result<(), ()> {
+        self.reason = packet.decode_string()?;
+        return Ok(());
+    }
+
+    fn to_str(&self) -> String {
+        format!("[LOGIN_DISCONNECT] {}", self.reason)
+    }
+
+    fn state_updating(&self) -> bool {
+        true
+    }
+
+    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
+        state.state = State::Handshaking;
+        Ok(())
+    }
+}

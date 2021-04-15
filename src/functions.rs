@@ -56,6 +56,14 @@ pub fn get_functions() -> Functions {
         &mut functions,
         Direction::Clientbound,
         State::Login,
+        0x00,
+        Box::new(crate::clientbound::login::Disconnect::empty()),
+    );
+
+    add_to_functions(
+        &mut functions,
+        Direction::Clientbound,
+        State::Login,
         0x01,
         Box::new(crate::clientbound::login::EncRequest::empty()),
     );
