@@ -1,5 +1,6 @@
 use crate::packet::{Packet, Parsable};
-use crate::types::{Status, State};
+use crate::types::{State, Status};
+use hex::encode;
 use std::convert::TryInto;
 
 #[derive(Clone)]
@@ -33,12 +34,12 @@ impl Parsable for EncRequest {
 
     fn to_str(&self) -> String {
         format!(
-            "[ECN_REQUEST] {} {} {:x?} {} {:x?}",
+            "[ECN_REQUEST] {} {} {} {} {}",
             self.server_id,
             self.public_key_length,
-            self.public_key,
+            encode(self.public_key.clone()),
             self.verify_token_length,
-            self.verify_token
+            encode(self.verify_token.clone())
         )
     }
 }
@@ -102,6 +103,37 @@ impl Parsable for LoginSuccess {
 
     fn update_state(&self, state: &mut Status) -> Result<(), ()> {
         state.state = State::Play;
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub struct Disconnect {
+    reason: String,
+}
+
+impl Parsable for Disconnect {
+    fn empty() -> Self {
+        Self {
+            reason: "".into(),
+        }
+    }
+
+    fn parse_packet(&mut self, mut packet: Packet) -> Result<(), ()> {
+        self.reason = packet.decode_string()?;
+        return Ok(());
+    }
+
+    fn to_str(&self) -> String {
+        format!("[LOGIN_DISCONNECT] {}", self.reason)
+    }
+
+    fn state_updating(&self) -> bool {
+        true
+    }
+
+    fn update_state(&self, state: &mut Status) -> Result<(), ()> {
+        state.state = State::Handshaking;
         Ok(())
     }
 }
