@@ -1,9 +1,16 @@
 use miniz_oxide::inflate::decompress_to_vec_zlib;
-use std::io::Write;
-use std::sync::{Arc, Mutex};
+use std::{
+    io::Write,
+    sync::{Arc, Mutex},
+};
 
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::{
+        tcp::{OwnedReadHalf, OwnedWriteHalf},
+        TcpListener, TcpStream,
+    },
+};
 
 use colored::*;
 use env_logger::Builder;
@@ -28,23 +35,33 @@ pub mod serverbound;
 pub use packet::{Packet, Parsable};
 pub use types::{Direction, State, Status};
 
+// This function starts a loop that parses all the recieved bytes into packets and then handels the packets
 async fn packet_parser(
-    clientbound_queue: Arc<DataQueue>,
+    queue: Arc<DataQueue>,
     direction: Direction,
     status: Arc<Mutex<Status>>,
 ) -> Result<(), ()> {
+    // It initializes a variable that will hold all the not yet parsed data
     let mut data = packet::Packet::new();
+    // It then gets the functions that need to be called with each packet ID
     let functions = functions::get_functions();
     loop {
-        let new_byte = clientbound_queue.pop().await;
+        // It gets a single byte from the queue
+        let new_byte = queue.pop().await;
+        // It then decrypts it with the correct cipher
         let new_byte = match direction {
             Direction::Serverbound => status.lock().unwrap().server_cipher.decrypt(new_byte),
             Direction::Clientbound => status.lock().unwrap().client_cipher.decrypt(new_byte),
         };
 
+        // And then adds the byte to the list that still needs to be parsed
         data.push(new_byte);
+        // Then it does this loop until the queue is empty or until there is not enough data to parse the next packet.
         while data.len() > 0 {
+            // It takes a backup of the data before trying to parse anything,
+            // because there is a decent chance that the parsing fails and it needs to be restored.
             let o_data: Vec<u8> = data.get();
+            // It then starts parsing the packet by seeing the length the next packet will be.
             let packet_length = match data.decode_varint() {
                 Ok(packet_length) => packet_length,
                 Err(()) => {
@@ -52,11 +69,14 @@ async fn packet_parser(
                     break;
                 }
             };
+            // If there is enough data to parse the packet, continue else break
             if (data.len() as i32) < packet_length {
                 data.set(o_data);
                 break;
             }
+            // It then puts the data in a new object that should be empty at the end.
             let mut packet = packet::Packet::from(data.read(packet_length as usize).unwrap());
+            // If the packet is compressed, decompress it and put it back in the object.
             if status.lock().unwrap().compress > 0 {
                 let data_length = packet.decode_varint()?;
                 if data_length > 0 {
@@ -72,8 +92,10 @@ async fn packet_parser(
                     ()
                 }
             }
+            // Get the packet id
             let packet_id = packet.decode_varint()?;
-            // println!("{:?} {:X}", direction, packet_id);
+
+            // Try to parse the packet with the packet ID, if the id is not found just continue to the next packet
             let mut parsed_packet = match functions
                 .get(&direction)
                 .unwrap()
@@ -84,8 +106,11 @@ async fn packet_parser(
                 Some(func) => func.clone(),
                 None => continue,
             };
+
+            // It then parses the packet with the found parser
             match parsed_packet.parse_packet(packet) {
                 Ok(_) => {
+                    // And prints the parsed packet data (with fancy colours)
                     let (packet_action, packet_info) = parsed_packet.get_printable();
                     log::info!(
                         "{} [{}]{3:4$} {}",
@@ -97,11 +122,13 @@ async fn packet_parser(
                     )
                 }
                 Err(_) => {
+                    // If it can't parse the packet just fail and move on
                     log::error!("Could not parse packet!");
                     continue;
                 }
             };
-            if parsed_packet.state_updating() {
+            // It then updates the status if needed
+            if parsed_packet.status_updating() {
                 parsed_packet
                     .update_status(&mut status.lock().unwrap())
                     .unwrap()
@@ -110,89 +137,78 @@ async fn packet_parser(
     }
 }
 
+async fn packet_listener(mut rx: OwnedReadHalf, mut tx: OwnedWriteHalf, queue: Arc<DataQueue>) {
+    // This makes a buffer to hold all the sent bytes
+    let mut buf = [0; 1024];
+    loop {
+        // It waits for bytes from the rx
+        let n = match rx.read(&mut buf).await {
+            Ok(n) if n == 0 => {
+                log::warn!("Socket closed");
+                return;
+            }
+            Ok(n) => n,
+            Err(e) => {
+                log::error!("failed to read from socket; err = {:?}", e);
+                return;
+            }
+        };
+        // Then adds them to the parsing queue (byte for byte)
+        for i in 0..n {
+            queue.push(buf[i]);
+        }
+        // Then it sends them over to the tx
+        if let Err(e) = tx.write_all(&buf[0..n]).await {
+            log::error!("failed to write to socket; err = {:?}", e);
+            return;
+        }
+    }
+}
+
 async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
+    // It makes two queues that will hold all new packets.
     let serverbound_queue = Arc::new(DataQueue::new());
     let clientbound_queue = Arc::new(DataQueue::new());
-    let state: Arc<Mutex<Status>> = Arc::new(Mutex::new(Status::new()));
+    // It also makes a shared status that hold the current state + compression + ciphers
+    let status: Arc<Mutex<Status>> = Arc::new(Mutex::new(Status::new()));
     log::info!("Connecting to {}...", CONNECT_IP);
 
+    // This makes the connection to the actual server
     let server_stream = TcpStream::connect(CONNECT_IP).await?;
-    let (mut srx, mut stx) = server_stream.into_split();
-    let (mut crx, mut ctx) = client_stream.into_split();
+    // Then splits up both the connections in an rx and tx.
+    let (srx, stx) = server_stream.into_split();
+    let (crx, ctx) = client_stream.into_split();
 
+    // It then starts a thread listening to new packets for both the tx and rx pairs.
     let sb_queue = serverbound_queue.clone();
-    tokio::spawn(async move {
-        let mut buf = [0; 1024];
-        loop {
-            let n = match crx.read(&mut buf).await {
-                Ok(n) if n == 0 => {
-                    log::warn!("Socket closed");
-                    return;
-                }
-                Ok(n) => n,
-                Err(e) => {
-                    log::error!("failed to read from socket; err = {:?}", e);
-                    return;
-                }
-            };
-            for i in 0..n {
-                sb_queue.push(buf[i]);
-            }
-            if let Err(e) = stx.write_all(&buf[0..n]).await {
-                log::error!("failed to write to socket; err = {:?}", e);
-                return;
-            }
-        }
-    });
+    tokio::spawn(async move { packet_listener(crx, stx, sb_queue).await });
 
     let cb_queue = clientbound_queue.clone();
-    tokio::spawn(async move {
-        let mut buf = [0; 1024];
-        loop {
-            let n = match srx.read(&mut buf).await {
-                Ok(n) if n == 0 => {
-                    log::warn!("Socket closed");
-                    return;
-                }
-                Ok(n) => n,
-                Err(e) => {
-                    log::error!("Failed to read from socket; err = {:?}", e);
-                    return;
-                }
-            };
-            for i in 0..n {
-                cb_queue.push(buf[i]);
-            }
-            if let Err(e) = ctx.write_all(&buf[0..n]).await {
-                log::error!("Failed to write to socket; err = {:?}", e);
-                return;
-            }
-        }
-    });
+    tokio::spawn(async move { packet_listener(srx, ctx, cb_queue).await });
 
-    let c_state = state.clone();
+    // It also starts two threads to parse all the new packets both ways
+    let c_status = status.clone();
     tokio::spawn(async move {
-        let client_queue = clientbound_queue.clone();
-        packet_parser(client_queue, Direction::Clientbound, c_state)
+        packet_parser(clientbound_queue, Direction::Clientbound, c_status)
             .await
             .unwrap();
     });
 
-    let s_state = state.clone();
+    let s_status = status.clone();
     tokio::spawn(async move {
-        let server_queue = serverbound_queue.clone();
-        packet_parser(server_queue, Direction::Serverbound, s_state)
+        packet_parser(serverbound_queue, Direction::Serverbound, s_status)
             .await
             .unwrap();
     });
 
+    // Then it returns, because this is no longer needed
     Ok(())
 }
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    // Load the logger, it has a fancy format with colours and it's spaced.
     Builder::from_default_env()
-        // .format(|buf, record| writeln!(buf, "{} - {}", record.level(), record.args()))
         .format(|buf, record| {
             let formatted_level = buf.default_styled_level(record.level());
             writeln!(buf, "{:<5} {}", formatted_level, record.args())
@@ -202,11 +218,14 @@ async fn main() -> std::io::Result<()> {
         .init();
 
     log::info!("Starting listener...");
+    // Start listening on `BIND_ADDRESS` for new connections
     let mc_client_listener = TcpListener::bind(BIND_ADDRESS).await?;
 
     loop {
+        // If this continues, a new client is connected.
         let (socket, _) = mc_client_listener.accept().await?;
         log::info!("Client connected...");
+        // Start the client-handeling thread (this will complete quickly)
         handle_connection(socket).await?;
     }
 }

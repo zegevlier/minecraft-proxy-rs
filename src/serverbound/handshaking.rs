@@ -41,7 +41,7 @@ impl Parsable for Handshake {
         )
     }
 
-    fn state_updating(&self) -> bool {
+    fn status_updating(&self) -> bool {
         true
     }
 

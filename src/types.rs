@@ -9,18 +9,16 @@ pub enum State {
 }
 
 impl fmt::Display for State {
-    fn fmt(&self,  f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Handshaking => write!(f, "Handshaking"),
             Self::Status => write!(f, "Status"),
             Self::Login => write!(f, "Login"),
             Self::Play => write!(f, "Play"),
         }
-        
     }
 }
 
-// #[derive(Clone)]
 pub struct Status {
     pub compress: u32,
     pub state: State,
@@ -46,11 +44,10 @@ pub enum Direction {
 }
 
 impl fmt::Display for Direction {
-    fn fmt(&self,  f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Serverbound => write!(f, "C>S"),
-            Self::Clientbound => write!(f, "S>C")
+            Self::Clientbound => write!(f, "S>C"),
         }
-        
     }
 }

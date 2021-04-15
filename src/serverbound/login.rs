@@ -69,7 +69,7 @@ impl Parsable for EncResponse {
         )
     }
 
-    fn state_updating(&self) -> bool {
+    fn status_updating(&self) -> bool {
         true
     }
 
@@ -90,7 +90,6 @@ impl Parsable for EncResponse {
                 .to_string()
         };
         let path = Path::new(&path_str);
-        // println!("{:?}", &path.to_str());
 
         let file = File::open(path).unwrap();
         let reader = BufReader::new(file);

@@ -67,7 +67,7 @@ impl Parsable for SetCompression {
         ("SET_COMPRESSION", format!("{}", self.threshold,))
     }
 
-    fn state_updating(&self) -> bool {
+    fn status_updating(&self) -> bool {
         true
     }
 
@@ -104,7 +104,7 @@ impl Parsable for LoginSuccess {
         )
     }
 
-    fn state_updating(&self) -> bool {
+    fn status_updating(&self) -> bool {
         true
     }
 
@@ -134,7 +134,7 @@ impl Parsable for Disconnect {
         ("LOGIN_DISCONNECT", format!("{}", self.reason))
     }
 
-    fn state_updating(&self) -> bool {
+    fn status_updating(&self) -> bool {
         true
     }
 

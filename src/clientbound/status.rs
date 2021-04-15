@@ -42,7 +42,7 @@ impl Parsable for StatusPong {
         ("STATUS_PONG", format!("{}", self.payload))
     }
 
-    fn state_updating(&self) -> bool {
+    fn status_updating(&self) -> bool {
         true
     }
 

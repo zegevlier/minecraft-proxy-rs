@@ -105,7 +105,6 @@ impl Packet {
 
 #[cfg(test)]
 mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
     #[test]
@@ -179,7 +178,7 @@ pub trait Parsable: DynClone {
         Ok(())
     }
 
-    fn state_updating(&self) -> bool {
+    fn status_updating(&self) -> bool {
         false
     }
 }
