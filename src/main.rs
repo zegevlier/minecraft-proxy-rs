@@ -3,7 +3,12 @@ use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
+#[macro_use]
+extern crate log;
+
 type DataQueue = deadqueue::unlimited::Queue<u8>;
+
+const CONNECT_IP: &str = "play.schoolrp.net:25565";
 
 mod cipher;
 mod functions;
@@ -73,7 +78,7 @@ async fn packet_parser(
                 None => continue,
             };
             match parsed_packet.parse_packet(packet) {
-                Ok(_) => println!("{}", parsed_packet.to_str()),
+                Ok(_) => println!("{:?}: {}", direction, parsed_packet.to_str()),
                 Err(_) => {
                     println!("Could not parse packet!");
                     continue;
@@ -92,11 +97,9 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
     let serverbound_queue = Arc::new(DataQueue::new());
     let clientbound_queue = Arc::new(DataQueue::new());
     let state: Arc<Mutex<Status>> = Arc::new(Mutex::new(Status::new()));
+    info!("Connecting to {}...", CONNECT_IP);
 
-    let server_stream = TcpStream::connect(
-        // "127.0.0.1:25565"
-        "play.schoolrp.net:25565"
-    ).await?;
+    let server_stream = TcpStream::connect(CONNECT_IP).await?;
     let (mut srx, mut stx) = server_stream.into_split();
     let (mut crx, mut ctx) = client_stream.into_split();
 
@@ -106,12 +109,12 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
         loop {
             let n = match crx.read(&mut buf).await {
                 Ok(n) if n == 0 => {
-                    println!("Socket closed");
+                    warn!("Socket closed");
                     return;
                 }
                 Ok(n) => n,
                 Err(e) => {
-                    eprintln!("failed to read from socket; err = {:?}", e);
+                    error!("failed to read from socket; err = {:?}", e);
                     return;
                 }
             };
@@ -119,7 +122,7 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
                 sb_queue.push(buf[i]);
             }
             if let Err(e) = stx.write_all(&buf[0..n]).await {
-                eprintln!("failed to write to socket; err = {:?}", e);
+                error!("failed to write to socket; err = {:?}", e);
                 return;
             }
         }
@@ -131,12 +134,12 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
         loop {
             let n = match srx.read(&mut buf).await {
                 Ok(n) if n == 0 => {
-                    println!("Socket closed");
+                    warn!("Socket closed");
                     return;
                 }
                 Ok(n) => n,
                 Err(e) => {
-                    eprintln!("failed to read from socket; err = {:?}", e);
+                    error!("failed to read from socket; err = {:?}", e);
                     return;
                 }
             };
@@ -144,7 +147,7 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
                 cb_queue.push(buf[i]);
             }
             if let Err(e) = ctx.write_all(&buf[0..n]).await {
-                eprintln!("failed to write to socket; err = {:?}", e);
+                error!("failed to write to socket; err = {:?}", e);
                 return;
             }
         }
@@ -171,10 +174,14 @@ async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    pretty_env_logger::init();
+
+    info!("Starting listener...");
     let mc_client_listener = TcpListener::bind("127.0.0.1:3333").await?;
 
     loop {
         let (socket, _) = mc_client_listener.accept().await?;
+        info!("Client connected...");
         handle_connection(socket).await?;
     }
 }
