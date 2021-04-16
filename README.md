@@ -1,13 +1,12 @@
 # minecraft-proxy-rs
 
-## Packets still required to be implemented
+## Packets not yet implemented
 ### Login
  - [ ]  Login CB plugin request
  - [ ]  Login SB plugin response
 
 ### Play
 #### Serverbound
-
  - [ ]  Spawn Entity
  - [ ]  Spawn Experience Orb
  - [ ]  Spawn Living Entity
@@ -100,6 +99,7 @@
  - [ ]  Entity Effect
  - [ ]  Declare Recipes
  - [ ]  Tags
+
 #### Serverbound
  - [ ]  Teleport Confirm
  - [ ]  Query Block NBT
