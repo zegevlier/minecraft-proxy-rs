@@ -1,8 +1,6 @@
 use miniz_oxide::inflate::decompress_to_vec_zlib;
-use std::{
-    io::Write,
-    sync::{Arc, Mutex},
-};
+use parking_lot::Mutex;
+use std::{io::Write, sync::Arc};
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -50,8 +48,8 @@ async fn packet_parser(
         let new_byte = queue.pop().await;
         // It then decrypts it with the correct cipher
         let new_byte = match direction {
-            Direction::Serverbound => status.lock().unwrap().server_cipher.decrypt(new_byte),
-            Direction::Clientbound => status.lock().unwrap().client_cipher.decrypt(new_byte),
+            Direction::Serverbound => status.lock().server_cipher.decrypt(new_byte),
+            Direction::Clientbound => status.lock().client_cipher.decrypt(new_byte),
         };
 
         // And then adds the byte to the list that still needs to be parsed
@@ -77,7 +75,7 @@ async fn packet_parser(
             // It then puts the data in a new object that should be empty at the end.
             let mut packet = packet::Packet::from(data.read(packet_length as usize).unwrap());
             // If the packet is compressed, decompress it and put it back in the object.
-            if status.lock().unwrap().compress > 0 {
+            if status.lock().compress > 0 {
                 let data_length = packet.decode_varint()?;
                 if data_length > 0 {
                     let decompressed_packet = match decompress_to_vec_zlib(&packet.get_vec()) {
@@ -99,7 +97,7 @@ async fn packet_parser(
             let mut parsed_packet = match functions
                 .get(&direction)
                 .unwrap()
-                .get(&status.lock().unwrap().state)
+                .get(&status.lock().state)
                 .unwrap()
                 .get(&packet_id)
             {
@@ -129,9 +127,7 @@ async fn packet_parser(
             };
             // It then updates the status if needed
             if parsed_packet.status_updating() {
-                parsed_packet
-                    .update_status(&mut status.lock().unwrap())
-                    .unwrap()
+                parsed_packet.update_status(&mut status.lock()).unwrap()
             }
         }
     }
