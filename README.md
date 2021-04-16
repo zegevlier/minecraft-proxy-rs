@@ -1,10 +1,7 @@
 # minecraft-proxy-rs
 
 ## Packets not yet implemented
-### Login
- - [ ]  Login CB plugin request
- - [ ]  Login SB plugin response
-
+All of these packets are taken from wiki.vg, some might not have to be implemented.
 ### Play
 #### Serverbound
  - [ ]  Spawn Entity

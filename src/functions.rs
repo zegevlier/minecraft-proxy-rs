@@ -117,6 +117,13 @@ pub fn get_functions() -> Functions {
         Box::new(clientbound::login::SetCompression::empty()),
     );
 
+    functions.add(
+        Direction::Clientbound,
+        State::Login,
+        0x04,
+        Box::new(clientbound::login::PluginRequest::empty()),
+    );
+
     // sb
     functions.add(
         Direction::Serverbound,
@@ -130,6 +137,13 @@ pub fn get_functions() -> Functions {
         State::Login,
         0x01,
         Box::new(serverbound::login::EncResponse::empty()),
+    );
+
+    functions.add(
+        Direction::Serverbound,
+        State::Login,
+        0x02,
+        Box::new(serverbound::login::PluginResponse::empty()),
     );
 
     functions.f

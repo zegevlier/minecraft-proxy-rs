@@ -106,6 +106,14 @@ impl Packet {
     pub fn decode_long(&mut self) -> Result<i64, ()> {
         Ok(i64::from_be_bytes(self.read(8)?.try_into().unwrap()))
     }
+
+    pub fn decode_bool(&mut self) -> Result<bool, ()> {
+        Ok(match self.read(1)?[0] {
+            0x00 => false,
+            0x01 => true,
+            _ => return Err(()),
+        })
+    }
 }
 
 // More tests still need to be added (preferebly for everything that the packet can parse).

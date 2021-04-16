@@ -119,3 +119,39 @@ impl Parsable for EncResponse {
         Ok(())
     }
 }
+
+#[derive(Clone)]
+pub struct PluginResponse {
+    message_id: i32,
+    success: bool,
+    data: Vec<u8>,
+}
+
+impl Parsable for PluginResponse {
+    fn empty() -> Self {
+        Self {
+            message_id: 0,
+            success: false,
+            data: Vec::new(),
+        }
+    }
+
+    fn parse_packet(&mut self, mut packet: Packet) -> Result<(), ()> {
+        self.message_id = packet.decode_varint()?;
+        self.success = packet.decode_bool()?;
+        self.data = packet.get_vec();
+        return Ok(());
+    }
+
+    fn get_printable(&self) -> (&str, String) {
+        (
+            "PLUGIN_REQ",
+            format!(
+                "{} {} {}",
+                self.message_id,
+                self.success,
+                utils::make_string_fixed_length(encode(&self.data), 30)
+            ),
+        )
+    }
+}
