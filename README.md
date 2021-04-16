@@ -152,8 +152,7 @@
 
 
 ## Other TODOS:
- - Making a guide or automated tool to put in the secret logger
- - Making a config file
+ - Making a ~~[guide](https://github.com/zegevlier/minecraft-proxy-rs/blob/main/Building%20the%20JAR.md)~~ or automated tool to put in the secret logger
  - Add tests for *all* values in packets
  - Maybe add tests for cypher.rs
  - Automated loading in of things in server and clientbound

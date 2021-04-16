@@ -16,10 +16,6 @@ use log::LevelFilter;
 
 type DataQueue = deadqueue::unlimited::Queue<u8>;
 
-// const CONNECT_IP: &str = "play.schoolrp.net:25565";
-const CONNECT_IP: &str = "127.0.0.1:25565";
-const BIND_ADDRESS: &str = "127.0.0.1:3333";
-
 mod cipher;
 mod functions;
 mod types;
@@ -161,16 +157,19 @@ async fn packet_listener(mut rx: OwnedReadHalf, mut tx: OwnedWriteHalf, queue: A
     }
 }
 
-async fn handle_connection(client_stream: TcpStream) -> std::io::Result<()> {
+async fn handle_connection(
+    client_stream: TcpStream,
+    config: &types::ConfigFormat,
+) -> std::io::Result<()> {
     // It makes two queues that will hold all new packets.
     let serverbound_queue = Arc::new(DataQueue::new());
     let clientbound_queue = Arc::new(DataQueue::new());
     // It also makes a shared status that hold the current state + compression + ciphers
     let status: Arc<Mutex<Status>> = Arc::new(Mutex::new(Status::new()));
-    log::info!("Connecting to {}...", CONNECT_IP);
+    log::info!("Connecting to {}...", &config.connect_ip);
 
     // This makes the connection to the actual server
-    let server_stream = TcpStream::connect(CONNECT_IP).await?;
+    let server_stream = TcpStream::connect(&config.connect_ip).await?;
     // Then splits up both the connections in an rx and tx.
     let (srx, stx) = server_stream.into_split();
     let (crx, ctx) = client_stream.into_split();
@@ -213,15 +212,26 @@ async fn main() -> std::io::Result<()> {
         .parse_default_env()
         .init();
 
+    log::info!("Reading config...");
+    let mut settings = config::Config::default();
+    settings.merge(config::File::with_name("settings")).unwrap();
+
+    let config = match settings.try_into::<types::ConfigFormat>() {
+        Ok(config) => config,
+        Err(err) => {
+            panic!("Could not parse config file!\n{}", err)
+        }
+    };
+
     log::info!("Starting listener...");
     // Start listening on `BIND_ADDRESS` for new connections
-    let mc_client_listener = TcpListener::bind(BIND_ADDRESS).await?;
+    let mc_client_listener = TcpListener::bind(&config.listen_ip).await?;
 
     loop {
         // If this continues, a new client is connected.
         let (socket, _) = mc_client_listener.accept().await?;
         log::info!("Client connected...");
         // Start the client-handeling thread (this will complete quickly)
-        handle_connection(socket).await?;
+        handle_connection(socket, &config).await?;
     }
 }

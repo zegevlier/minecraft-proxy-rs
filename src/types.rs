@@ -1,6 +1,6 @@
 use crate::cipher::Cipher;
+use serde::Deserialize;
 use std::fmt;
-
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum State {
     Handshaking,
@@ -52,4 +52,10 @@ impl fmt::Display for Direction {
             Self::Clientbound => write!(f, "S>C"),
         }
     }
+}
+
+#[derive(Deserialize, Clone)]
+pub struct ConfigFormat {
+    pub connect_ip: String,
+    pub listen_ip: String,
 }
