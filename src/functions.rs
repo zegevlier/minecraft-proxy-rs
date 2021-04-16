@@ -1,129 +1,136 @@
-use crate::packet::Parsable;
-use crate::types::{Direction, State};
+use crate::{
+    clientbound,
+    packet::Parsable,
+    serverbound,
+    types::{Direction, State},
+};
 use maplit::hashmap;
 use std::collections::HashMap;
 
 type Functions = HashMap<Direction, HashMap<State, HashMap<i32, Box<dyn Parsable + Send>>>>;
 
-fn add_to_functions(
-    functions: &mut Functions,
-    direction: Direction,
-    state: State,
-    id: i32,
-    func: Box<dyn Parsable + Send>,
-) {
-    functions
-        .get_mut(&direction)
-        .unwrap()
-        .get_mut(&state)
-        .unwrap()
-        .insert(id, func);
+struct Funcs {
+    f: Functions,
+}
+
+impl Funcs {
+    fn new() -> Self {
+        Self {
+            f: hashmap! {
+                Direction::Serverbound => hashmap! {
+                    State::Handshaking => hashmap! {},
+                    State::Status => hashmap! {},
+                    State::Login => hashmap! {},
+                    State::Play => hashmap! {},
+                },
+                Direction::Clientbound => hashmap! {
+                    State::Handshaking => hashmap! {},
+                    State::Status => hashmap! {},
+                    State::Login => hashmap! {},
+                    State::Play => hashmap! {},
+                },
+            },
+        }
+    }
+
+    fn add(&mut self, direction: Direction, state: State, id: i32, func: Box<dyn Parsable + Send>) {
+        self.f
+            .get_mut(&direction)
+            .unwrap()
+            .get_mut(&state)
+            .unwrap()
+            .insert(id, func);
+    }
 }
 
 pub fn get_functions() -> Functions {
-    let mut functions: Functions = hashmap! {
-        Direction::Serverbound => hashmap! {
-            State::Handshaking => hashmap! {},
-            State::Status => hashmap! {},
-            State::Login => hashmap! {},
-            State::Play => hashmap! {},
-        },
-        Direction::Clientbound => hashmap! {
-            State::Handshaking => hashmap! {},
-            State::Status => hashmap! {},
-            State::Login => hashmap! {},
-            State::Play => hashmap! {},
-        },
-    };
+    let mut functions = Funcs::new();
 
-    // These have to be reorganized
-    add_to_functions(
-        &mut functions,
+    // handshaking
+    // sb
+    functions.add(
         Direction::Serverbound,
         State::Handshaking,
         0x00,
-        Box::new(crate::serverbound::handshaking::Handshake::empty()),
+        Box::new(serverbound::handshaking::Handshake::empty()),
     );
+    // cb
 
-    add_to_functions(
-        &mut functions,
-        Direction::Serverbound,
-        State::Login,
+    // status
+    // cb
+    functions.add(
+        Direction::Clientbound,
+        State::Status,
         0x00,
-        Box::new(crate::serverbound::login::LoginStart::empty()),
+        Box::new(clientbound::status::StatusResponse::empty()),
     );
 
-    add_to_functions(
-        &mut functions,
+    functions.add(
+        Direction::Clientbound,
+        State::Status,
+        0x01,
+        Box::new(clientbound::status::StatusPong::empty()),
+    );
+
+    // sb
+    functions.add(
+        Direction::Serverbound,
+        State::Status,
+        0x00,
+        Box::new(serverbound::status::StatusRequest::empty()),
+    );
+
+    functions.add(
+        Direction::Serverbound,
+        State::Status,
+        0x01,
+        Box::new(serverbound::status::StatusPing::empty()),
+    );
+
+    // login
+    // cb
+    functions.add(
         Direction::Clientbound,
         State::Login,
         0x00,
-        Box::new(crate::clientbound::login::Disconnect::empty()),
+        Box::new(clientbound::login::Disconnect::empty()),
     );
 
-    add_to_functions(
-        &mut functions,
+    functions.add(
         Direction::Clientbound,
         State::Login,
         0x01,
-        Box::new(crate::clientbound::login::EncRequest::empty()),
+        Box::new(clientbound::login::EncRequest::empty()),
     );
 
-    add_to_functions(
-        &mut functions,
-        Direction::Serverbound,
-        State::Login,
-        0x01,
-        Box::new(crate::serverbound::login::EncResponse::empty()),
-    );
-
-    add_to_functions(
-        &mut functions,
-        Direction::Clientbound,
-        State::Login,
-        0x03,
-        Box::new(crate::clientbound::login::SetCompression::empty()),
-    );
-
-    add_to_functions(
-        &mut functions,
+    functions.add(
         Direction::Clientbound,
         State::Login,
         0x02,
-        Box::new(crate::clientbound::login::LoginSuccess::empty()),
+        Box::new(clientbound::login::LoginSuccess::empty()),
     );
 
-    add_to_functions(
-        &mut functions,
+    functions.add(
         Direction::Clientbound,
-        State::Status,
-        0x00,
-        Box::new(crate::clientbound::status::StatusResponse::empty()),
+        State::Login,
+        0x03,
+        Box::new(clientbound::login::SetCompression::empty()),
     );
 
-    add_to_functions(
-        &mut functions,
-        Direction::Clientbound,
-        State::Status,
-        0x01,
-        Box::new(crate::clientbound::status::StatusPong::empty()),
-    );
-
-    add_to_functions(
-        &mut functions,
+    // sb
+    functions.add(
         Direction::Serverbound,
-        State::Status,
+        State::Login,
         0x00,
-        Box::new(crate::serverbound::status::StatusRequest::empty()),
+        Box::new(serverbound::login::LoginStart::empty()),
     );
 
-    add_to_functions(
-        &mut functions,
+    functions.add(
         Direction::Serverbound,
-        State::Status,
+        State::Login,
         0x01,
-        Box::new(crate::serverbound::status::StatusPing::empty()),
+        Box::new(serverbound::login::EncResponse::empty()),
     );
 
-    functions
+    functions.f
 }
