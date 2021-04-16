@@ -3,7 +3,7 @@
 ## Packets not yet implemented
 All of these packets are taken from wiki.vg, some might not have to be implemented.
 ### Play
-#### Serverbound
+#### Clientbound
  - [ ]  Spawn Entity
  - [ ]  Spawn Experience Orb
  - [ ]  Spawn Living Entity
