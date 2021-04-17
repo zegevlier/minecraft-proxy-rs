@@ -4,9 +4,9 @@
 All of these packets are taken from wiki.vg, some might not have to be implemented.
 ### Play
 #### Clientbound
- - [ ]  Spawn Entity
- - [ ]  Spawn Experience Orb
- - [ ]  Spawn Living Entity
+ - [x]  Spawn Entity
+ - [x]  Spawn Experience Orb
+ - [x]  Spawn Living Entity
  - [ ]  Spawn Painting
  - [ ]  Spawn Player
  - [ ]  Entity Animation (clientbound)

@@ -116,7 +116,7 @@ async fn packet_parser(
                             packet_action.blue(),
                             packet_info,
                             "",
-                            15 - packet_action.len()
+                            20 - packet_action.len()
                         )
                     }
                 }
