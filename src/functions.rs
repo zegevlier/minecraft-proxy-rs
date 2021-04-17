@@ -155,5 +155,12 @@ pub fn get_functions() -> Functions {
         Box::new(clientbound::play::SpawnEntity::empty()),
     );
 
+    functions.add(
+        Direction::Clientbound,
+        State::Play,
+        0x01,
+        Box::new(clientbound::play::SpawnXpOrb::empty()),
+    );
+
     functions.f
 }
