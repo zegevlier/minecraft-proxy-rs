@@ -13,14 +13,13 @@ impl Cipher {
         Self { encryptor: None }
     }
 
-    pub fn decrypt(&mut self, d: u8) -> u8 {
+    pub fn decrypt(&mut self, mut data: Vec<u8>) -> Vec<u8> {
         match &mut self.encryptor {
             Some(encryptor) => {
-                let mut d_buffer = vec![d];
-                encryptor.decrypt(d_buffer.as_mut_slice());
-                d_buffer[0]
+                encryptor.decrypt(data.as_mut_slice());
+                data
             }
-            None => d,
+            None => data,
         }
     }
 

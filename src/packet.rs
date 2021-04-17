@@ -21,6 +21,10 @@ impl Packet {
         self.data.push(data)
     }
 
+    pub fn push_vec(&mut self, data: Vec<u8>) {
+        self.data.append(&mut data.to_owned())
+    }
+
     pub fn len(&self) -> usize {
         self.data.len()
     }

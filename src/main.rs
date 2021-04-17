@@ -14,7 +14,7 @@ use colored::*;
 use env_logger::Builder;
 use log::LevelFilter;
 
-type DataQueue = deadqueue::unlimited::Queue<u8>;
+type DataQueue = deadqueue::unlimited::Queue<Vec<u8>>;
 
 mod cipher;
 mod functions;
@@ -49,7 +49,7 @@ async fn packet_parser(
         };
 
         // And then adds the byte to the list that still needs to be parsed
-        data.push(new_byte);
+        data.push_vec(new_byte);
         // Then it does this loop until the queue is empty or until there is not enough data to parse the next packet.
         while data.len() > 0 {
             // It takes a backup of the data before trying to parse anything,
@@ -131,7 +131,7 @@ async fn packet_parser(
 
 async fn packet_listener(mut rx: OwnedReadHalf, mut tx: OwnedWriteHalf, queue: Arc<DataQueue>) {
     // This makes a buffer to hold all the sent bytes
-    let mut buf = [0; 1024];
+    let mut buf = [0; 4096];
     loop {
         // It waits for bytes from the rx
         let n = match rx.read(&mut buf).await {
@@ -146,9 +146,7 @@ async fn packet_listener(mut rx: OwnedReadHalf, mut tx: OwnedWriteHalf, queue: A
             }
         };
         // Then adds them to the parsing queue (byte for byte)
-        for i in 0..n {
-            queue.push(buf[i]);
-        }
+        queue.push(buf[0..n].to_vec());
         // Then it sends them over to the tx
         if let Err(e) = tx.write_all(&buf[0..n]).await {
             log::error!("failed to write to socket; err = {:?}", e);
