@@ -176,5 +176,12 @@ pub fn get_functions() -> Functions {
         Box::new(clientbound::play::SpawnPainting::empty()),
     );
 
+    functions.add(
+        Direction::Clientbound,
+        State::Play,
+        0x04,
+        Box::new(clientbound::play::SpawnPlayer::empty()),
+    );
+
     functions.f
 }

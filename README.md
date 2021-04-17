@@ -7,8 +7,8 @@ All of these packets are taken from wiki.vg, some might not have to be implement
  - [x]  Spawn Entity
  - [x]  Spawn Experience Orb
  - [x]  Spawn Living Entity
- - [ ]  Spawn Painting
- - [ ]  Spawn Player
+ - [x]  Spawn Painting
+ - [x]  Spawn Player
  - [ ]  Entity Animation (clientbound)
  - [ ]  Statistics
  - [ ]  Acknowledge Player Digging
