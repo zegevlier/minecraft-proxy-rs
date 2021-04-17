@@ -114,6 +114,22 @@ impl Packet {
             _ => return Err(()),
         })
     }
+
+    pub fn decode_uuid(&mut self) -> Result<u128, ()> {
+        Ok(u128::from_be_bytes(self.read(16)?.try_into().unwrap()))
+    }
+
+    pub fn decode_double(&mut self) -> Result<f64, ()> {
+        Ok(f64::from_be_bytes(self.read(8)?.try_into().unwrap()))
+    }
+
+    pub fn decode_int(&mut self) -> Result<i32, ()> {
+        Ok(i32::from_be_bytes(self.read(4)?.try_into().unwrap()))
+    }
+
+    pub fn decode_short(&mut self) -> Result<i16, ()> {
+        Ok(i16::from_be_bytes(self.read(2)?.try_into().unwrap()))
+    }
 }
 
 // More tests still need to be added (preferebly for everything that the packet can parse).

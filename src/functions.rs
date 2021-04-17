@@ -146,5 +146,14 @@ pub fn get_functions() -> Functions {
         Box::new(serverbound::login::PluginResponse::empty()),
     );
 
+    // play
+    // cb
+    functions.add(
+        Direction::Clientbound,
+        State::Play,
+        0x00,
+        Box::new(clientbound::play::SpawnEntity::empty()),
+    );
+
     functions.f
 }

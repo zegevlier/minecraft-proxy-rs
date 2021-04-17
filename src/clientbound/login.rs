@@ -2,7 +2,6 @@ use crate::packet::{Packet, Parsable};
 use crate::types::{State, Status};
 use crate::utils;
 use hex::encode;
-use std::convert::TryInto;
 
 #[derive(Clone)]
 pub struct EncRequest {
@@ -92,7 +91,7 @@ impl Parsable for LoginSuccess {
     }
 
     fn parse_packet(&mut self, mut packet: Packet) -> Result<(), ()> {
-        self.uuid = u128::from_be_bytes(packet.read(16)?.try_into().unwrap());
+        self.uuid = packet.decode_uuid()?;
         self.username = packet.decode_string()?;
         return Ok(());
     }
