@@ -134,6 +134,25 @@ impl Packet {
     pub fn decode_short(&mut self) -> Result<i16, ()> {
         Ok(i16::from_be_bytes(self.read(2)?.try_into().unwrap()))
     }
+
+    pub fn decode_position(&mut self) -> Result<(i64, i64, i64), ()> {
+        let val = i64::from_be_bytes(self.read(8)?.try_into().unwrap());
+        let mut x = val >> 38;
+        let mut y = val & 0xFFF;
+        let mut z = val << 26 >> 38;
+
+        if x >= 2 ^ 25 {
+            x -= 2 ^ 26
+        }
+        if y >= 2 ^ 11 {
+            y -= 2 ^ 12
+        }
+        if z >= 2 ^ 25 {
+            z -= 2 ^ 26
+        }
+
+        Ok((x, y, z))
+    }
 }
 
 // More tests still need to be added (preferebly for everything that the packet can parse).
