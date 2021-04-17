@@ -58,4 +58,5 @@ impl fmt::Display for Direction {
 pub struct ConfigFormat {
     pub connect_ip: String,
     pub listen_ip: String,
+    pub printing_packets: Vec<String>,
 }

@@ -34,6 +34,7 @@ async fn packet_parser(
     queue: Arc<DataQueue>,
     direction: Direction,
     status: Arc<Mutex<Status>>,
+    config: &types::ConfigFormat,
 ) -> Result<(), ()> {
     // It initializes a variable that will hold all the not yet parsed data
     let mut data = packet::Packet::new();
@@ -106,14 +107,18 @@ async fn packet_parser(
                 Ok(_) => {
                     // And prints the parsed packet data (with fancy colours)
                     let (packet_action, packet_info) = parsed_packet.get_printable();
-                    log::info!(
-                        "{} [{}]{3:4$} {}",
-                        direction.to_string().yellow(),
-                        packet_action.blue(),
-                        packet_info,
-                        "",
-                        15 - packet_action.len()
-                    )
+                    if config.printing_packets.contains(&packet_action.to_string())
+                        || config.printing_packets.contains(&"*".to_string())
+                    {
+                        log::info!(
+                            "{} [{}]{3:4$} {}",
+                            direction.to_string().yellow(),
+                            packet_action.blue(),
+                            packet_info,
+                            "",
+                            15 - packet_action.len()
+                        )
+                    }
                 }
                 Err(_) => {
                     // If it can't parse the packet just fail and move on
@@ -157,7 +162,7 @@ async fn packet_listener(mut rx: OwnedReadHalf, mut tx: OwnedWriteHalf, queue: A
 
 async fn handle_connection(
     client_stream: TcpStream,
-    config: &types::ConfigFormat,
+    config: types::ConfigFormat,
 ) -> std::io::Result<()> {
     // It makes two queues that will hold all new packets.
     let serverbound_queue = Arc::new(DataQueue::new());
@@ -181,17 +186,29 @@ async fn handle_connection(
 
     // It also starts two threads to parse all the new packets both ways
     let c_status = status.clone();
+    let c_config = config.clone();
     tokio::spawn(async move {
-        packet_parser(clientbound_queue, Direction::Clientbound, c_status)
-            .await
-            .unwrap();
+        packet_parser(
+            clientbound_queue,
+            Direction::Clientbound,
+            c_status,
+            &c_config,
+        )
+        .await
+        .unwrap();
     });
 
     let s_status = status.clone();
+    let s_config = config.clone();
     tokio::spawn(async move {
-        packet_parser(serverbound_queue, Direction::Serverbound, s_status)
-            .await
-            .unwrap();
+        packet_parser(
+            serverbound_queue,
+            Direction::Serverbound,
+            s_status,
+            &s_config,
+        )
+        .await
+        .unwrap();
     });
 
     // Then it returns, because this is no longer needed
@@ -230,6 +247,6 @@ async fn main() -> std::io::Result<()> {
         let (socket, _) = mc_client_listener.accept().await?;
         log::info!("Client connected...");
         // Start the client-handeling thread (this will complete quickly)
-        handle_connection(socket, &config).await?;
+        handle_connection(socket, config.clone()).await?;
     }
 }
