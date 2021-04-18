@@ -50,24 +50,21 @@ impl Parsable for SpawnEntity {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "SPAWN_ENTITY",
-            format!(
-                "{} {:x} {} {} {} {} {} {} {} {} {} {}",
-                self.entity_id,
-                self.object_uuid,
-                self.r#type,
-                self.x,
-                self.y,
-                self.z,
-                self.pitch,
-                self.yaw,
-                self.data,
-                self.velocity_x,
-                self.velocity_y,
-                self.velocity_z
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {:x} {} {} {} {} {} {} {} {} {} {}",
+            self.entity_id,
+            self.object_uuid,
+            self.r#type,
+            self.x,
+            self.y,
+            self.z,
+            self.pitch,
+            self.yaw,
+            self.data,
+            self.velocity_x,
+            self.velocity_y,
+            self.velocity_z
         )
     }
 }
@@ -101,13 +98,10 @@ impl Parsable for SpawnXpOrb {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "SPAWN_XP_ORB",
-            format!(
-                "{} {} {} {} {}",
-                self.entity_id, self.x, self.y, self.z, self.count
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {} {} {} {}",
+            self.entity_id, self.x, self.y, self.z, self.count
         )
     }
 }
@@ -162,24 +156,21 @@ impl Parsable for SpawnLivingEntity {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "SPAWN_LIVING_ENTITY",
-            format!(
-                "{} {:x} {} {} {} {} {} {} {} {} {} {}",
-                self.entity_id,
-                self.object_uuid,
-                self.r#type,
-                self.x,
-                self.y,
-                self.z,
-                self.yaw,
-                self.pitch,
-                self.head_pitch,
-                self.velocity_x,
-                self.velocity_y,
-                self.velocity_z
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {:x} {} {} {} {} {} {} {} {} {} {}",
+            self.entity_id,
+            self.object_uuid,
+            self.r#type,
+            self.x,
+            self.y,
+            self.z,
+            self.yaw,
+            self.pitch,
+            self.head_pitch,
+            self.velocity_x,
+            self.velocity_y,
+            self.velocity_z
         )
     }
 }
@@ -233,19 +224,10 @@ impl Parsable for SpawnPainting {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "SPAWN_PAINTING",
-            format!(
-                "{} {:x} {} {} {} {} {:?}",
-                self.entity_id,
-                self.object_uuid,
-                self.motive,
-                self.x,
-                self.y,
-                self.z,
-                self.direction,
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {:x} {} {} {} {} {:?}",
+            self.entity_id, self.object_uuid, self.motive, self.x, self.y, self.z, self.direction,
         )
     }
 }
@@ -285,13 +267,10 @@ impl Parsable for SpawnPlayer {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "SPAWN_PLAYER",
-            format!(
-                "{} {:x} {} {} {} {} {}",
-                self.entity_id, self.player_uuid, self.x, self.y, self.z, self.yaw, self.pitch,
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {:x} {} {} {} {} {}",
+            self.entity_id, self.player_uuid, self.x, self.y, self.z, self.yaw, self.pitch,
         )
     }
 }

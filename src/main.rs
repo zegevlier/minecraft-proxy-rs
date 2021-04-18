@@ -91,13 +91,11 @@ async fn packet_parser(
             let packet_id = packet.decode_varint()?;
 
             // Try to parse the packet with the packet ID, if the id is not found just continue to the next packet
-            let mut parsed_packet = match functions
-                .get(&direction)
-                .unwrap()
-                .get(&status.lock().state)
-                .unwrap()
-                .get(&packet_id)
-            {
+            let func_name = match functions.get_name(&direction, &status.lock().state, &packet_id) {
+                Some(func_name) => func_name,
+                None => continue,
+            };
+            let mut parsed_packet = match functions.get(func_name) {
                 Some(func) => func.clone(),
                 None => continue,
             };
@@ -106,17 +104,17 @@ async fn packet_parser(
             match parsed_packet.parse_packet(packet) {
                 Ok(_) => {
                     // And prints the parsed packet data (with fancy colours)
-                    let (packet_action, packet_info) = parsed_packet.get_printable();
-                    if config.printing_packets.contains(&packet_action.to_string())
+                    let packet_info = parsed_packet.get_printable();
+                    if config.printing_packets.contains(&func_name.to_string())
                         || config.printing_packets.contains(&"*".to_string())
                     {
                         log::info!(
                             "{} [{}]{3:4$} {}",
                             direction.to_string().yellow(),
-                            packet_action.blue(),
+                            func_name.to_string().blue(),
                             packet_info,
                             "",
-                            20 - packet_action.len()
+                            20 - func_name.to_string().len()
                         )
                     }
                 }

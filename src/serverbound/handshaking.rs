@@ -31,13 +31,10 @@ impl Parsable for Handshake {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "HANDSHAKE",
-            format!(
-                "{} {}:{} {:?}",
-                self.protocol_version, self.server_address, self.server_port, self.next_state
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {}:{} {:?}",
+            self.protocol_version, self.server_address, self.server_port, self.next_state
         )
     }
 

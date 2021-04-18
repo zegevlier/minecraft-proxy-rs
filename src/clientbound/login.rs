@@ -32,17 +32,14 @@ impl Parsable for EncRequest {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "ENC_REQUEST",
-            format!(
-                "{} {} {} {}",
-                // self.server_id,
-                self.public_key_length,
-                utils::make_string_fixed_length(encode(self.public_key.clone()), 20),
-                self.verify_token_length,
-                utils::make_string_fixed_length(encode(self.verify_token.clone()), 20)
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {} {} {}",
+            // self.server_id,
+            self.public_key_length,
+            utils::make_string_fixed_length(encode(self.public_key.clone()), 20),
+            self.verify_token_length,
+            utils::make_string_fixed_length(encode(self.verify_token.clone()), 20)
         )
     }
 }
@@ -62,8 +59,8 @@ impl Parsable for SetCompression {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        ("SET_COMPRESSION", format!("{}", self.threshold,))
+    fn get_printable(&self) -> String {
+        format!("{}", self.threshold)
     }
 
     fn status_updating(&self) -> bool {
@@ -96,11 +93,8 @@ impl Parsable for LoginSuccess {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "LOGIN_SUCCESS",
-            format!("{:x} {}", self.uuid, self.username,),
-        )
+    fn get_printable(&self) -> String {
+        format!("{:x} {}", self.uuid, self.username,)
     }
 
     fn status_updating(&self) -> bool {
@@ -129,8 +123,8 @@ impl Parsable for Disconnect {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        ("LOGIN_DISCONNECT", format!("{}", self.reason))
+    fn get_printable(&self) -> String {
+        format!("{}", self.reason)
     }
 
     fn status_updating(&self) -> bool {
@@ -167,15 +161,12 @@ impl Parsable for PluginRequest {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "PLUGIN_REQ",
-            format!(
-                "{} {} {}",
-                self.message_id,
-                self.channel,
-                utils::make_string_fixed_length(encode(&self.data), 30)
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {} {}",
+            self.message_id,
+            self.channel,
+            utils::make_string_fixed_length(encode(&self.data), 30)
         )
     }
 }

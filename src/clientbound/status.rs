@@ -18,8 +18,8 @@ impl Parsable for StatusResponse {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        ("STATUS_RESPONSE", format!("{}", self.json_response))
+    fn get_printable(&self) -> String {
+        format!("{}", self.json_response)
     }
 }
 
@@ -38,8 +38,8 @@ impl Parsable for StatusPong {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        ("STATUS_PONG", format!("{}", self.payload))
+    fn get_printable(&self) -> String {
+        format!("{}", self.payload)
     }
 
     fn status_updating(&self) -> bool {

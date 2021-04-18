@@ -25,8 +25,8 @@ impl Parsable for LoginStart {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        ("LOGIN_START", format!("{}", self.username,))
+    fn get_printable(&self) -> String {
+        format!("{}", self.username,)
     }
 }
 
@@ -56,16 +56,13 @@ impl Parsable for EncResponse {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "ENC_RESPONSE",
-            format!(
-                "{} {} {} {}",
-                self.shared_secret_length,
-                utils::make_string_fixed_length(encode(self.shared_secret.clone()), 20),
-                self.verify_token_length,
-                utils::make_string_fixed_length(encode(self.verify_token.clone()), 20)
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {} {} {}",
+            self.shared_secret_length,
+            utils::make_string_fixed_length(encode(self.shared_secret.clone()), 20),
+            self.verify_token_length,
+            utils::make_string_fixed_length(encode(self.verify_token.clone()), 20)
         )
     }
 
@@ -143,15 +140,12 @@ impl Parsable for PluginResponse {
         return Ok(());
     }
 
-    fn get_printable(&self) -> (&str, String) {
-        (
-            "PLUGIN_REQ",
-            format!(
-                "{} {} {}",
-                self.message_id,
-                self.success,
-                utils::make_string_fixed_length(encode(&self.data), 30)
-            ),
+    fn get_printable(&self) -> String {
+        format!(
+            "{} {} {}",
+            self.message_id,
+            self.success,
+            utils::make_string_fixed_length(encode(&self.data), 30)
         )
     }
 }
