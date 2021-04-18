@@ -27,6 +27,7 @@ pub enum Fid {
     SpawnLivingEntity,
     SpawnPainting,
     SpawnPlayer,
+    AckPlayerDigging,
 }
 
 impl Fid {
@@ -62,7 +63,11 @@ impl Functions {
                         0x01 => Fid::SpawnXpOrb,
                         0x02 => Fid::SpawnLivingEntity,
                         0x03 => Fid::SpawnPainting,
-                        0x04 => Fid::SpawnPlayer
+                        0x04 => Fid::SpawnPlayer,
+
+
+
+                        0x07 => Fid::AckPlayerDigging,
                     },
                 },
                 Direction::Serverbound => hashmap! {
@@ -213,6 +218,11 @@ pub fn get_functions() -> Functions {
     functions.add(
         Fid::SpawnPlayer,
         Box::new(clientbound::play::SpawnPlayer::empty()),
+    );
+
+    functions.add(
+        Fid::AckPlayerDigging,
+        Box::new(clientbound::play::AckPlayerDigging::empty()),
     );
 
     functions
