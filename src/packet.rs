@@ -55,6 +55,59 @@ impl Packet {
         self.data = value;
     }
 
+    pub fn decode_bool(&mut self) -> Result<bool, ()> {
+        Ok(match self.read(1)?[0] {
+            0x00 => false,
+            0x01 => true,
+            _ => return Err(()),
+        })
+    }
+
+    pub fn decode_byte(&mut self) -> Result<i8, ()> {
+        Ok(i8::from_be_bytes(self.read(1)?.try_into().unwrap()))
+    }
+
+    pub fn decode_ubyte(&mut self) -> Result<u8, ()> {
+        Ok(self.read(1)?[0])
+    }
+
+    pub fn decode_short(&mut self) -> Result<i16, ()> {
+        Ok(i16::from_be_bytes(self.read(2)?.try_into().unwrap()))
+    }
+
+    pub fn decode_ushort(&mut self) -> Result<u16, ()> {
+        Ok(u16::from_be_bytes(self.read(2)?.try_into().unwrap()))
+    }
+
+    pub fn decode_int(&mut self) -> Result<i32, ()> {
+        Ok(i32::from_be_bytes(self.read(4)?.try_into().unwrap()))
+    }
+
+    pub fn decode_long(&mut self) -> Result<i64, ()> {
+        Ok(i64::from_be_bytes(self.read(8)?.try_into().unwrap()))
+    }
+
+    pub fn decode_float(&mut self) -> Result<f32, ()> {
+        Ok(f32::from_be_bytes(self.read(4)?.try_into().unwrap()))
+    }
+
+    pub fn decode_double(&mut self) -> Result<f64, ()> {
+        Ok(f64::from_be_bytes(self.read(8)?.try_into().unwrap()))
+    }
+
+    pub fn decode_string(&mut self) -> Result<String, ()> {
+        let string_length = self.decode_varint()?;
+        return Ok(String::from_utf8(self.read(string_length.try_into().unwrap())?).unwrap());
+    }
+
+    pub fn decode_chat(&mut self) -> Result<String, ()> {
+        Ok(self.decode_string()?)
+    }
+
+    pub fn decode_identifier(&mut self) -> Result<String, ()> {
+        Ok(self.decode_string()?)
+    }
+
     // no touchies
     pub fn decode_varint(&mut self) -> Result<i32, ()> {
         let mut num_read = 0;
@@ -97,43 +150,11 @@ impl Packet {
         return Ok(result);
     }
 
-    pub fn decode_string(&mut self) -> Result<String, ()> {
-        let string_length = self.decode_varint()?;
-        return Ok(String::from_utf8(self.read(string_length.try_into().unwrap())?).unwrap());
-    }
+    // Entity Metadata
 
-    // The numbers need to be decoded from be bytes, because mc in weird.
-    pub fn decode_ushort(&mut self) -> Result<u16, ()> {
-        Ok(u16::from_be_bytes(self.read(2)?.try_into().unwrap()))
-    }
+    // Slot
 
-    pub fn decode_long(&mut self) -> Result<i64, ()> {
-        Ok(i64::from_be_bytes(self.read(8)?.try_into().unwrap()))
-    }
-
-    pub fn decode_bool(&mut self) -> Result<bool, ()> {
-        Ok(match self.read(1)?[0] {
-            0x00 => false,
-            0x01 => true,
-            _ => return Err(()),
-        })
-    }
-
-    pub fn decode_uuid(&mut self) -> Result<u128, ()> {
-        Ok(u128::from_be_bytes(self.read(16)?.try_into().unwrap()))
-    }
-
-    pub fn decode_double(&mut self) -> Result<f64, ()> {
-        Ok(f64::from_be_bytes(self.read(8)?.try_into().unwrap()))
-    }
-
-    pub fn decode_int(&mut self) -> Result<i32, ()> {
-        Ok(i32::from_be_bytes(self.read(4)?.try_into().unwrap()))
-    }
-
-    pub fn decode_short(&mut self) -> Result<i16, ()> {
-        Ok(i16::from_be_bytes(self.read(2)?.try_into().unwrap()))
-    }
+    // NBT Tag
 
     pub fn decode_position(&mut self) -> Result<(i64, i64, i64), ()> {
         let val = i64::from_be_bytes(self.read(8)?.try_into().unwrap());
@@ -152,6 +173,14 @@ impl Packet {
         }
 
         Ok((x, y, z))
+    }
+
+    pub fn decode_angle(&mut self) -> Result<u8, ()> {
+        Ok(self.read(1)?[0])
+    }
+
+    pub fn decode_uuid(&mut self) -> Result<u128, ()> {
+        Ok(u128::from_be_bytes(self.read(16)?.try_into().unwrap()))
     }
 }
 
