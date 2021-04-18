@@ -1,3 +1,4 @@
 connect_ip = "127.0.0.1:25565"
 listen_ip = "127.0.0.1:25555"
-printing_packets = ["HANDSHAKE", "LOGIN_START", "LOGIN_SUCCESS", "*"]
+parsing_packets = ["*", "Handshake", "LoginSuccess", "Disconnect", "EncResponse", "SetCompression", "StatusPong"]
+printing_packets = ["Handshake", "LoginStart", "LoginSuccess", "SpawnLivingEntity"]

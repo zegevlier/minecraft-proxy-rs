@@ -100,33 +100,37 @@ async fn packet_parser(
                 None => continue,
             };
 
-            // It then parses the packet with the found parser
-            match parsed_packet.parse_packet(packet) {
-                Ok(_) => {
-                    // And prints the parsed packet data (with fancy colours)
-                    let packet_info = parsed_packet.get_printable();
-                    if config.printing_packets.contains(&func_name.to_string())
-                        || config.printing_packets.contains(&"*".to_string())
-                    {
-                        log::info!(
-                            "{} [{}]{3:4$} {}",
-                            direction.to_string().yellow(),
-                            func_name.to_string().blue(),
-                            packet_info,
-                            "",
-                            20 - func_name.to_string().len()
-                        )
+            if config.parsing_packets.contains(&func_name.to_string())
+                || config.parsing_packets.contains(&"*".to_string())
+            {
+                // It then parses the packet with the found parser
+                match parsed_packet.parse_packet(packet) {
+                    Ok(_) => {
+                        // And prints the parsed packet data (with fancy colours)
+                        let packet_info = parsed_packet.get_printable();
+                        if config.printing_packets.contains(&func_name.to_string())
+                            || config.printing_packets.contains(&"*".to_string())
+                        {
+                            log::info!(
+                                "{} [{}]{3:4$} {}",
+                                direction.to_string().yellow(),
+                                func_name.to_string().blue(),
+                                packet_info,
+                                "",
+                                20 - func_name.to_string().len()
+                            )
+                        }
                     }
+                    Err(_) => {
+                        // If it can't parse the packet just fail and move on
+                        log::error!("Could not parse packet!");
+                        continue;
+                    }
+                };
+                // It then updates the status if needed
+                if parsed_packet.status_updating() {
+                    parsed_packet.update_status(&mut status.lock()).unwrap()
                 }
-                Err(_) => {
-                    // If it can't parse the packet just fail and move on
-                    log::error!("Could not parse packet!");
-                    continue;
-                }
-            };
-            // It then updates the status if needed
-            if parsed_packet.status_updating() {
-                parsed_packet.update_status(&mut status.lock()).unwrap()
             }
         }
     }
